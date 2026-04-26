@@ -1945,11 +1945,11 @@ function injectUI() {
   leftPanel.id = 'ea-panel-left'
   type CategoryId = 'oil' | 'gas' | 'electricity' | 'exports' | 'overview'
   const categories: { id: CategoryId, label: string, color: string }[] = [
-    { id: 'overview', label: ' ', color: '#88bbff' },
-    { id: 'oil', label: ' ', color: '#ff8844' },
-    { id: 'gas', label: ' ', color: '#44ccff' },
-    { id: 'electricity', label: ' ', color: '#ffaa44' },
-    { id: 'exports', label: ' ', color: '#00ffcc' },
+    { id: 'overview', label: 'Overview', color: '#88bbff' },
+    { id: 'oil', label: 'Oil', color: '#ff8844' },
+    { id: 'gas', label: 'Natural Gas', color: '#44ccff' },
+    { id: 'electricity', label: 'Electricity', color: '#ffaa44' },
+    { id: 'exports', label: 'Exports', color: '#00ffcc' },
   ]
   let activeCategory: CategoryId = 'overview'
 
@@ -1989,9 +1989,9 @@ function injectUI() {
 
     if (activeCategory === 'overview') {
       items = [
-        { key: 'priceMarkers', label: ' ', color: '#3dd884' },
-        { key: 'usRegion', label: ' ', color: '#4a7c59' },
-        { key: 'mexRegion', label: ' ', color: '#ed8936' },
+        { key: 'priceMarkers', label: 'Market Prices', color: '#3dd884' },
+        { key: 'usRegion', label: 'United States', color: '#4a7c59' },
+        { key: 'mexRegion', label: 'Mexico', color: '#ed8936' },
       ]
       infoTabs = [
         { id: 'history', label: 'Historical Data' },
@@ -1999,10 +1999,10 @@ function injectUI() {
       ]
     } else if (activeCategory === 'oil') {
       items = [
-        { key: 'oilPipelines', label: ' ', color: '#ff6622' },
-        { key: 'oilRefineries', label: ' ', color: '#ff8844' },
-        { key: 'oilCancelled', label: ' ', color: '#ff4444' },
-        { key: 'basins', label: ' ', color: '#8b5a2b' },
+        { key: 'oilPipelines', label: 'Pipelines', color: '#ff6622' },
+        { key: 'oilRefineries', label: 'Refineries', color: '#ff8844' },
+        { key: 'oilCancelled', label: 'Cancelled Projects', color: '#ff4444' },
+        { key: 'basins', label: 'Sedimentary Basins', color: '#8b5a2b' },
       ]
       infoTabs = [
         { id: 'cancelled', label: 'What-If Analysis' },
@@ -2010,25 +2010,25 @@ function injectUI() {
       ]
     } else if (activeCategory === 'gas') {
       items = [
-        { key: 'gasPipelines', label: ' ', color: '#00ccff' },
-        { key: 'lngTerminals', label: ' ', color: '#00ffcc' },
-        { key: 'basins', label: ' ', color: '#8b5a2b' },
+        { key: 'gasPipelines', label: 'Pipelines', color: '#00ccff' },
+        { key: 'lngTerminals', label: 'LNG Terminals', color: '#00ffcc' },
+        { key: 'basins', label: 'Sedimentary Basins', color: '#8b5a2b' },
       ]
       infoTabs = [
         { id: 'sources', label: 'Data Sources' },
       ]
     } else if (activeCategory === 'electricity') {
       items = [
-        { key: 'electricalGrid', label: ' ', color: '#ffaa44' },
+        { key: 'electricalGrid', label: 'Electrical Grid', color: '#ffaa44' },
       ]
       infoTabs = [
         { id: 'history', label: 'Historical Data' },
       ]
     } else if (activeCategory === 'exports') {
       items = [
-        { key: 'exportTerminals', label: ' ', color: '#00ffcc' },
-        { key: 'exportRoutes', label: ' ', color: '#44aaff' },
-        { key: 'exportBoats', label: ' ', color: '#dddddd' },
+        { key: 'exportTerminals', label: 'Export Terminals', color: '#00ffcc' },
+        { key: 'exportRoutes', label: 'Shipping Routes', color: '#44aaff' },
+        { key: 'exportBoats', label: 'Active Vessels', color: '#dddddd' },
       ]
       infoTabs = [
         { id: 'sources', label: 'Data Sources' },
