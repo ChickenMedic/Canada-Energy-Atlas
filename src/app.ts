@@ -1906,6 +1906,15 @@ function injectUI() {
     }
     #ea-place-btn.visible { opacity: 1; pointer-events: auto; }
     #ea-place-btn:hover { background: rgba(100, 160, 255, 1); transform: translateX(-50%) scale(1.05); }
+
+    @media (min-width: 768px) {
+      #ea-drawer, #ea-detail { left: 50%; right: auto; width: 600px; transform: translateX(-50%) translateY(100%); }
+      #ea-drawer.open, #ea-detail.open { transform: translateX(-50%) translateY(0); }
+      #ea-panel-left { left: 30px; top: 60px; }
+      #ea-panel-right { right: 30px; top: 60px; }
+      #ea-hamburger-left { left: 30px; top: 20px; }
+      #ea-hamburger-right { right: 30px; top: 20px; }
+    }
   `
   document.head.appendChild(style)
 
@@ -2565,8 +2574,6 @@ ecs.registerBehavior((w: any) => {
   function animationLoop() {
     try {
       animateBoats()
-      flowTextures.forEach(t => t.map.offset.x -= t.velocity)
-
       // Move reticle on the floor
       if (isPlacing && reticle && world && world.three.activeCamera) {
         const cam = world.three.activeCamera
@@ -2584,19 +2591,6 @@ ecs.registerBehavior((w: any) => {
           } catch(e) {}
         }
         
-        if (!foundHit) {
-          const rc = new T.Raycaster()
-          rc.setFromCamera(new T.Vector2(0, 0), cam)
-          const intersects = rc.intersectObjects(world.three.scene.children, true)
-          const hit = intersects.find((i: any) => i.object !== reticle && (!mapGroup || (i.object !== mapGroup && !mapGroup.children.includes(i.object))))
-          
-          if (hit && hit.distance < 10) {
-            reticle.position.copy(hit.point)
-            reticle.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), hit.face?.normal || new T.Vector3(0, 1, 0))
-            foundHit = true
-          }
-        }
-
         if (!foundHit) {
           const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
           const tVal = (-0.7) / (dir.y || -0.0001)
@@ -2638,12 +2632,6 @@ ecs.registerBehavior((w: any) => {
       mapGroup.lookAt(target)
       mapGroup.rotateY(Math.PI)
       
-      const rightAxisInit = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-      rightAxisInit.y = 0
-      if (rightAxisInit.lengthSq() < 0.001) rightAxisInit.set(1, 0, 0)
-      rightAxisInit.normalize()
-      mapGroup.rotateOnWorldAxis(rightAxisInit, (-90 * Math.PI) / 180)
-
       if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
       setupClickHandler()
     } else {
@@ -2671,13 +2659,6 @@ ecs.registerBehavior((w: any) => {
         if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
         mapGroup.lookAt(target)
         mapGroup.rotateY(Math.PI)
-        
-        const rightAxisInit = new T.Vector3(1, 0, 0)
-        rightAxisInit.applyQuaternion(cam.quaternion)
-        rightAxisInit.y = 0
-        if (rightAxisInit.lengthSq() < 0.001) rightAxisInit.set(1, 0, 0)
-        rightAxisInit.normalize()
-        mapGroup.rotateOnWorldAxis(rightAxisInit, (-90 * Math.PI) / 180)
 
         if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
         mapGroup.visible = true
