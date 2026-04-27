@@ -63,9 +63,9 @@
       "camera": {
         "type": "perspective",
         "xr": {
-          "desktop": "3D",
+          "desktop": "disabled",
           "phone": "AR",
-          "xrCameraType": "3dOnly",
+          "xrCameraType": "world",
           "headset": "disabled"
         }
       },

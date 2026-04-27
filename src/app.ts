@@ -31,6 +31,8 @@ let flowTexture: any = null
 let flowTextures: any[] = []
 let initialized = false
 let T: any = null
+let reticle: any = null
+let isPlacing = true
 
 // ── Layer visibility ──
 const layerState = {
@@ -477,18 +479,7 @@ function buildCanadaMap(scene: any) {
   labelGroup.visible = true  // visible by default in overview mode
   mapGroup.add(labelGroup)
 
-  // Ocean/base plane — large blue surface representing water
-  try {
-    const oceanGeom = new T.PlaneGeometry(20, 16)
-    const oceanMat = new T.MeshStandardMaterial({
-      color: 0x0c3d6b, transparent: true, opacity: 0.85,
-      metalness: 0.2, roughness: 0.7,
-    })
-    const ocean = new T.Mesh(oceanGeom, oceanMat)
-    ocean.rotation.x = -Math.PI / 2
-    ocean.position.y = -0.008
-    mapGroup.add(ocean)
-  } catch (e) { }
+  // Ocean plane removed to keep background transparent for AR
 
   scene.add(mapGroup)
 }
@@ -1905,8 +1896,24 @@ function injectUI() {
     .src-item a { color: #5599dd; text-decoration: none; }
     .src-item a:hover { text-decoration: underline; }
     .src-desc { color: #667788; font-size: 10px; margin-top: 1px; }
+
+    #ea-place-btn {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+      background: rgba(80, 140, 255, 0.9); color: #fff; border: 1px solid rgba(120, 180, 255, 0.8);
+      padding: 14px 32px; border-radius: 24px; font-weight: 700; font-size: 15px; text-transform: uppercase;
+      letter-spacing: 1px; cursor: pointer; pointer-events: none; opacity: 0;
+      transition: all 0.3s ease; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    #ea-place-btn.visible { opacity: 1; pointer-events: auto; }
+    #ea-place-btn:hover { background: rgba(100, 160, 255, 1); transform: translateX(-50%) scale(1.05); }
   `
   document.head.appendChild(style)
+
+  // ── Place Button ──
+  const placeBtn = document.createElement('button')
+  placeBtn.id = 'ea-place-btn'
+  placeBtn.innerText = 'Tap to Place Map'
+  document.body.appendChild(placeBtn)
 
   // ── Title with auto-fade ──
   const title = document.createElement('div')
@@ -2559,6 +2566,49 @@ ecs.registerBehavior((w: any) => {
     try {
       animateBoats()
       flowTextures.forEach(t => t.map.offset.x -= t.velocity)
+
+      // Move reticle on the floor
+      if (isPlacing && reticle && world && world.three.activeCamera) {
+        const cam = world.three.activeCamera
+        
+        let foundHit = false
+        if ((window as any).XR8 && (window as any).XR8.XrController) {
+          try {
+            // Native 8th Wall surface hit test
+            const hits = (window as any).XR8.XrController.hitTest(0.5, 0.5, ['ESTIMATED_SURFACE'])
+            if (hits && hits.length > 0) {
+              reticle.position.copy(hits[0].position)
+              reticle.quaternion.copy(hits[0].rotation)
+              foundHit = true
+            }
+          } catch(e) {}
+        }
+        
+        if (!foundHit) {
+          const rc = new T.Raycaster()
+          rc.setFromCamera(new T.Vector2(0, 0), cam)
+          const intersects = rc.intersectObjects(world.three.scene.children, true)
+          const hit = intersects.find((i: any) => i.object !== reticle && (!mapGroup || (i.object !== mapGroup && !mapGroup.children.includes(i.object))))
+          
+          if (hit && hit.distance < 10) {
+            reticle.position.copy(hit.point)
+            reticle.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), hit.face?.normal || new T.Vector3(0, 1, 0))
+            foundHit = true
+          }
+        }
+
+        if (!foundHit) {
+          const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+          const tVal = (-0.7) / (dir.y || -0.0001)
+          if (tVal > 0 && tVal < 10) {
+            reticle.position.copy(cam.position).add(dir.multiplyScalar(tVal))
+          } else {
+            reticle.position.copy(cam.position).add(dir.multiplyScalar(2.0))
+            reticle.position.y -= 0.7
+          }
+          reticle.rotation.set(-Math.PI / 2, 0, 0)
+        }
+      }
     } catch (e) { }
     requestAnimationFrame(animationLoop)
   }
@@ -2567,30 +2617,74 @@ ecs.registerBehavior((w: any) => {
 
 // Camera placement + controls (touch + mouse + gyroscope)
 ecs.registerBehavior((w: any) => {
-  if (mapGroup && w.three.activeCamera && !mapGroup.userData.placed) {
+  if (mapGroup && w.three.activeCamera && !mapGroup.userData.controlsSetup) {
+    mapGroup.userData.controlsSetup = true
     const cam = w.three.activeCamera
 
-    const dir = new T.Vector3(0, 0, -1)
-    dir.applyQuaternion(cam.quaternion)
-    mapGroup.position.copy(cam.position).add(dir.multiplyScalar(2.0))
-    mapGroup.position.y -= 0.7
-    mapGroup.lookAt(cam.position.x, mapGroup.position.y, cam.position.z)
-    mapGroup.rotateY(Math.PI)
+    // Reticle & Placing logic
+    const isDesktop = !(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
+    
+    if (isDesktop) {
+      isPlacing = false
+      mapGroup.userData.placed = true
+      mapGroup.visible = true
+      
+      const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+      mapGroup.position.copy(cam.position).add(dir.multiplyScalar(2.0))
+      mapGroup.position.y -= 0.7
+      
+      const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
+      if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
+      mapGroup.lookAt(target)
+      mapGroup.rotateY(Math.PI)
+      
+      const rightAxisInit = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      rightAxisInit.y = 0
+      if (rightAxisInit.lengthSq() < 0.001) rightAxisInit.set(1, 0, 0)
+      rightAxisInit.normalize()
+      mapGroup.rotateOnWorldAxis(rightAxisInit, (-90 * Math.PI) / 180)
 
-    // Pitch the map 90 degrees so it stands perfectly perpendicular to the camera line of sight
-    const rightAxisInit = new T.Vector3(1, 0, 0)
-    rightAxisInit.applyQuaternion(cam.quaternion)
-    rightAxisInit.y = 0
-    if (rightAxisInit.lengthSq() < 0.001) rightAxisInit.set(1, 0, 0)
-    rightAxisInit.normalize()
-    mapGroup.rotateOnWorldAxis(rightAxisInit, (-90 * Math.PI) / 180)
+      if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
+      setupClickHandler()
+    } else {
+      if (!reticle) {
+        const geom = new T.RingGeometry(0.12, 0.16, 32).rotateX(-Math.PI / 2)
+        const mat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false })
+        reticle = new T.Mesh(geom, mat)
+        w.three.scene.add(reticle)
+      }
+      
+      mapGroup.visible = false
 
+      setTimeout(() => {
+        if (isPlacing) document.getElementById('ea-place-btn')?.classList.add('visible')
+      }, 1000)
 
-    if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
-    mapGroup.userData.placed = true
+      document.getElementById('ea-place-btn')?.addEventListener('click', () => {
+        isPlacing = false
+        document.getElementById('ea-place-btn')?.classList.remove('visible')
+        reticle.visible = false
+        
+        mapGroup.position.copy(reticle.position)
+        
+        const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
+        if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
+        mapGroup.lookAt(target)
+        mapGroup.rotateY(Math.PI)
+        
+        const rightAxisInit = new T.Vector3(1, 0, 0)
+        rightAxisInit.applyQuaternion(cam.quaternion)
+        rightAxisInit.y = 0
+        if (rightAxisInit.lengthSq() < 0.001) rightAxisInit.set(1, 0, 0)
+        rightAxisInit.normalize()
+        mapGroup.rotateOnWorldAxis(rightAxisInit, (-90 * Math.PI) / 180)
 
-    // Set up click handling
-    setupClickHandler()
+        if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
+        mapGroup.visible = true
+        mapGroup.userData.placed = true
+        setupClickHandler()
+      })
+    }
 
     // ── MOUSE CONTROLS ──
     let isSpinning = false
@@ -2612,7 +2706,7 @@ ecs.registerBehavior((w: any) => {
       previousY = e.clientY
     }
     const moveListener = (e: PointerEvent) => {
-      if (!mapGroup || e.pointerType === 'touch') return
+      if (!mapGroup || e.pointerType === 'touch' || isPlacing) return
       const dx = e.clientX - previousX
       const dy = e.clientY - previousY
 
@@ -2673,7 +2767,7 @@ ecs.registerBehavior((w: any) => {
 
     const wheelListener = (e: WheelEvent) => {
       if ((e.target as HTMLElement).closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-detail')) return
-      if (mapGroup) {
+      if (mapGroup && !isPlacing) {
         let s = mapGroup.scale.x - e.deltaY * 0.001
         s = Math.max(0.1, Math.min(s, 5.0))
         applyZoomAtScreenPoint(s, e.clientX, e.clientY)
@@ -2713,7 +2807,7 @@ ecs.registerBehavior((w: any) => {
     }, { passive: true })
 
     window.addEventListener('touchmove', (e: TouchEvent) => {
-      if (!mapGroup) return
+      if (!mapGroup || isPlacing) return
       if (e.touches.length === 2) {
         // Pinch zoom
         const dx = e.touches[0].clientX - e.touches[1].clientX
@@ -2749,7 +2843,7 @@ ecs.registerBehavior((w: any) => {
           lastAvgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
         }
 
-      } else if (e.touches.length === 1 && touchCount === 1) {
+      } else if (e.touches.length === 1 && touchCount === 1 && !isPlacing) {
         // Single finger pan locked to floor
         const dx = e.touches[0].clientX - lastTouchX
         const dy = e.touches[0].clientY - lastTouchY
