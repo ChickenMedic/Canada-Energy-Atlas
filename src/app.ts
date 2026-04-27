@@ -33,6 +33,7 @@ let initialized = false
 let T: any = null
 let reticle: any = null
 let isPlacing = true
+let activeWorld: any = null
 
 // ── Layer visibility ──
 const layerState = {
@@ -2575,8 +2576,8 @@ ecs.registerBehavior((w: any) => {
     try {
       animateBoats()
       // Move reticle on the floor
-      if (isPlacing && reticle && world && world.three.activeCamera) {
-        const cam = world.three.activeCamera
+      if (isPlacing && reticle && activeWorld && activeWorld.three.activeCamera) {
+        const cam = activeWorld.three.activeCamera
         
         let foundHit = false
         if ((window as any).XR8 && (window as any).XR8.XrController) {
@@ -2611,6 +2612,7 @@ ecs.registerBehavior((w: any) => {
 
 // Camera placement + controls (touch + mouse + gyroscope)
 ecs.registerBehavior((w: any) => {
+  activeWorld = w
   if (mapGroup && w.three.activeCamera && !mapGroup.userData.controlsSetup) {
     mapGroup.userData.controlsSetup = true
     const cam = w.three.activeCamera
@@ -2693,19 +2695,15 @@ ecs.registerBehavior((w: any) => {
 
       if (isSpinning) {
         mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.005)
-        const rightAxis = new T.Vector3(1, 0, 0)
-        rightAxis.applyQuaternion(cam.quaternion)
-        rightAxis.y = 0
-        if (rightAxis.lengthSq() < 0.001) rightAxis.set(1, 0, 0)
-        rightAxis.normalize()
-        mapGroup.rotateOnWorldAxis(rightAxis, -dy * 0.004)
       } else if (isPanning) {
         // Pan locked to XZ floor plane
         const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-        const up = new T.Vector3(0, 1, 0).applyQuaternion(cam.quaternion)
+        right.y = 0; right.normalize()
+        const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+        forward.y = 0; forward.normalize()
 
         mapGroup.position.add(right.multiplyScalar(-dx * 0.0075))
-        mapGroup.position.add(up.multiplyScalar(-dy * 0.0075))
+        mapGroup.position.add(forward.multiplyScalar(dy * 0.0075))
       }
       previousX = e.clientX
       previousY = e.clientY
@@ -2810,12 +2808,6 @@ ecs.registerBehavior((w: any) => {
           const dY = avgY - lastAvgY
 
           mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.005)
-          const rightAxis = new T.Vector3(1, 0, 0)
-          rightAxis.applyQuaternion(cam.quaternion)
-          rightAxis.y = 0
-          if (rightAxis.lengthSq() < 0.001) rightAxis.set(1, 0, 0)
-          rightAxis.normalize()
-          mapGroup.rotateOnWorldAxis(rightAxis, -dY * 0.004)
 
           lastAvgX = avgX
           lastAvgY = avgY
@@ -2830,10 +2822,12 @@ ecs.registerBehavior((w: any) => {
         const dy = e.touches[0].clientY - lastTouchY
 
         const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-        const up = new T.Vector3(0, 1, 0).applyQuaternion(cam.quaternion)
+        right.y = 0; right.normalize()
+        const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+        forward.y = 0; forward.normalize()
 
         mapGroup.position.add(right.multiplyScalar(-dx * 0.0075))
-        mapGroup.position.add(up.multiplyScalar(-dy * 0.0075))
+        mapGroup.position.add(forward.multiplyScalar(dy * 0.0075))
 
         lastTouchX = e.touches[0].clientX
         lastTouchY = e.touches[0].clientY
