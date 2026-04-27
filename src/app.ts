@@ -31,8 +31,6 @@ let flowTexture: any = null
 let flowTextures: any[] = []
 let initialized = false
 let T: any = null
-let reticle: any = null
-let isPlacing = true
 let activeWorld: any = null
 
 // ── Layer visibility ──
@@ -2575,314 +2573,315 @@ ecs.registerBehavior((w: any) => {
   function animationLoop() {
     try {
       animateBoats()
-      // Move reticle on the floor
-      if (isPlacing && reticle && activeWorld && activeWorld.three.activeCamera) {
-        const cam = activeWorld.three.activeCamera
-        
-        let foundHit = false
-        if ((window as any).XR8 && (window as any).XR8.XrController) {
-          try {
-            // Native 8th Wall surface hit test
-            const hits = (window as any).XR8.XrController.hitTest(0.5, 0.5, ['ESTIMATED_SURFACE'])
-            if (hits && hits.length > 0) {
-              reticle.position.copy(hits[0].position)
-              reticle.quaternion.copy(hits[0].rotation)
-              foundHit = true
-            }
-          } catch(e) {}
-        }
-        
-        if (!foundHit) {
-          const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-          const tVal = (-0.7) / (dir.y || -0.0001)
-          if (tVal > 0 && tVal < 10) {
-            reticle.position.copy(cam.position).add(dir.multiplyScalar(tVal))
-          } else {
-            reticle.position.copy(cam.position).add(dir.multiplyScalar(2.0))
-            reticle.position.y -= 0.7
-          }
-          reticle.rotation.set(-Math.PI / 2, 0, 0)
-        }
-      }
+      animateBoats()
     } catch (e) { }
     requestAnimationFrame(animationLoop)
   }
   animationLoop()
 })
 
-// Camera placement + controls (touch + mouse + gyroscope)
+// Camera placement + controls
 ecs.registerBehavior((w: any) => {
-  activeWorld = w
-  if (mapGroup && w.three.activeCamera && !mapGroup.userData.controlsSetup) {
-    mapGroup.userData.controlsSetup = true
-    const cam = w.three.activeCamera
+  if (!mapGroup || !w.three.activeCamera || mapGroup.userData.initializedControls) return
+  mapGroup.userData.initializedControls = true
 
-    // Reticle & Placing logic
-    const isDesktop = !(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
-    
-    if (isDesktop) {
-      isPlacing = false
-      mapGroup.userData.placed = true
-      mapGroup.visible = true
-      
-      const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-      mapGroup.position.copy(cam.position).add(dir.multiplyScalar(2.0))
-      mapGroup.position.y -= 0.7
-      
-      const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
-      if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
-      mapGroup.lookAt(target)
-      mapGroup.rotateY(Math.PI)
-      
-      if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
-      setupClickHandler()
-    } else {
-      if (!reticle) {
-        const geom = new T.RingGeometry(0.12, 0.16, 32).rotateX(-Math.PI / 2)
-        const mat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false })
-        reticle = new T.Mesh(geom, mat)
-        w.three.scene.add(reticle)
+  const cam = w.three.activeCamera
+  
+  const isDesktop = !(/Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) && navigator.maxTouchPoints <= 1
+
+  let isPlaced = false
+  let hasFoundSurfaceEver = false
+  let placementReadyTime = 0
+
+  // AR Surface Reticle (White disk for placement)
+  const reticleGeom = new T.CylinderGeometry(0.5, 0.5, 0.05, 32)
+  const reticleMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+  const reticle = new T.Mesh(reticleGeom, reticleMat)
+  w.three.scene.add(reticle)
+  
+  const placeBtn = document.getElementById('ea-place-btn')
+
+  if (isDesktop) {
+    isPlaced = true
+    reticle.visible = false
+    if (placeBtn) placeBtn.style.display = 'none'
+
+    const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+    mapGroup.position.copy(cam.position).add(dir.multiplyScalar(2.0))
+    mapGroup.position.y -= 0.7
+    mapGroup.lookAt(cam.position.x, mapGroup.position.y, cam.position.z)
+    mapGroup.rotateY(Math.PI)
+
+    mapGroup.userData.originPos = mapGroup.position.clone()
+
+    if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
+    mapGroup.visible = true
+    setupClickHandler()
+  } else {
+    mapGroup.visible = false
+
+    const updatePlacement = () => {
+      if (isPlaced) {
+        reticle.visible = false
+        return
       }
       
-      mapGroup.visible = false
+      let hitSuccess = false
+      
+      if ((window as any).XR8 && (window as any).XR8.XrController) {
+        try {
+          const HitTypes = (window as any).XR8.XrController.HitTestTypes || {}
+          const types = [HitTypes.FEATURE_POINT || 'FEATURE_POINT', HitTypes.ESTIMATED_SURFACE || 'ESTIMATED_SURFACE']
+          const hitRes = (window as any).XR8.XrController.hitTest(0.5, 0.5, types)
+          if (hitRes && hitRes.length > 0) {
+            const hit = hitRes[0]
+            const targetPos = new T.Vector3(hit.position.x, hit.position.y, hit.position.z)
+            const targetQuat = new T.Quaternion(hit.rotation.x, hit.rotation.y, hit.rotation.z, hit.rotation.w)
+            
+            reticle.position.lerp(targetPos, 0.1)
+            reticle.quaternion.slerp(targetQuat, 0.1)
+            hitSuccess = true
+            if (!hasFoundSurfaceEver) {
+              hasFoundSurfaceEver = true
+              placementReadyTime = Date.now() + 1500
+            }
+          }
+        } catch (e) {}
+      }
+  
+      if (!hitSuccess) {
+        if (!hasFoundSurfaceEver) {
+          const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+          const targetPos = cam.position.clone().add(dir.multiplyScalar(1.5))
+          targetPos.y -= 1.0
+          reticle.position.lerp(targetPos, 0.1)
+        }
+        reticle.quaternion.slerp(new T.Quaternion(), 0.1)
+      }
+  
+      reticle.visible = true
+  
+      if (hasFoundSurfaceEver && Date.now() > placementReadyTime && placeBtn && !placeBtn.classList.contains('visible')) {
+        placeBtn.classList.add('visible')
+      }
+      
+      requestAnimationFrame(updatePlacement)
+    }
+    updatePlacement()
 
-      setTimeout(() => {
-        if (isPlacing) document.getElementById('ea-place-btn')?.classList.add('visible')
-      }, 1000)
-
-      document.getElementById('ea-place-btn')?.addEventListener('click', () => {
-        isPlacing = false
-        document.getElementById('ea-place-btn')?.classList.remove('visible')
+    if (placeBtn) {
+      placeBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        if (!hasFoundSurfaceEver) return
+        isPlaced = true
+        placeBtn.classList.remove('visible')
         reticle.visible = false
-        
+
         mapGroup.position.copy(reticle.position)
-        
         const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
         if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
         mapGroup.lookAt(target)
         mapGroup.rotateY(Math.PI)
 
+        mapGroup.userData.originPos = mapGroup.position.clone()
+
         if (mapGroup.parent !== w.three.scene) w.three.scene.add(mapGroup)
         mapGroup.visible = true
-        mapGroup.userData.placed = true
         setupClickHandler()
       })
     }
+  }
 
-    // ── MOUSE CONTROLS ──
-    let isSpinning = false
-    let isPanning = false
-    let previousX = 0
-    let previousY = 0
+  // ── MOUSE CONTROLS (XZ Floor plane locked) ──
+  let isSpinning = false
+  let isPanning = false
+  let previousX = 0
+  let previousY = 0
 
-    const isUI = (e: PointerEvent | TouchEvent) => {
-      const t = 'target' in e ? e.target as HTMLElement : null
-      return t?.closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-detail, #ea-title')
-    }
+  const isUI = (e: PointerEvent | TouchEvent) => {
+    const t = 'target' in e ? e.target as HTMLElement : null
+    return t?.closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-detail, #ea-title') !== null
+  }
 
-    const downListener = (e: PointerEvent) => {
-      if (isUI(e)) return
-      if (e.pointerType === 'touch') return // handled by touch events
-      if (e.button === 0) isSpinning = true
-      else if (e.button === 2) isPanning = true
-      previousX = e.clientX
-      previousY = e.clientY
-    }
-    const moveListener = (e: PointerEvent) => {
-      if (!mapGroup || e.pointerType === 'touch' || isPlacing) return
-      const dx = e.clientX - previousX
-      const dy = e.clientY - previousY
+  const downListener = (e: PointerEvent) => {
+    if (isUI(e)) return
+    if (!isPlaced) return
+    if (e.pointerType === 'touch') return
+    if (e.button === 0) isSpinning = true
+    else if (e.button === 2) isPanning = true
+    previousX = e.clientX
+    previousY = e.clientY
+  }
+  const moveListener = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') return
+    if (!isPlaced) return
+    const dx = e.clientX - previousX
+    const dy = e.clientY - previousY
 
-      if (isSpinning) {
-        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.005)
-      } else if (isPanning) {
-        // Pan locked to XZ floor plane
-        const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-        right.y = 0; right.normalize()
-        const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-        forward.y = 0; forward.normalize()
+    if (isSpinning) {
+      // Left Click spins the map (yaw only)
+      mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.005)
+    } else if (isPanning) {
+      // Right Click translates the map (locked to floor)
+      const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      right.y = 0; right.normalize()
+      const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+      forward.y = 0; forward.normalize()
 
-        mapGroup.position.add(right.multiplyScalar(-dx * 0.0075))
-        mapGroup.position.add(forward.multiplyScalar(dy * 0.0075))
+      const panSpeed = 0.004 * mapGroup.scale.x
+      mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
+      mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
+
+      // Clamp distance
+      const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
+      const maxDistance = 2.0 // meters
+      if (dist > maxDistance) {
+        const clampDir = new T.Vector3().subVectors(mapGroup.position, mapGroup.userData.originPos).normalize()
+        mapGroup.position.copy(mapGroup.userData.originPos).add(clampDir.multiplyScalar(maxDistance))
       }
-      previousX = e.clientX
-      previousY = e.clientY
     }
-    const upListener = (e: PointerEvent) => {
-      if (e.button === 0) isSpinning = false
-      if (e.button === 2) isPanning = false
-    }
-    const applyZoomAtScreenPoint = (newScale: number, pointerX: number, pointerY: number) => {
-      if (!mapGroup || !w.three.activeCamera) return
-      const oldScale = mapGroup.scale.x
-      if (oldScale === newScale) return
+    previousX = e.clientX
+    previousY = e.clientY
+  }
+  const upListener = (e: PointerEvent) => {
+    if (isUI(e)) return
+    if (e.button === 0) isSpinning = false
+    if (e.button === 2) isPanning = false
+  }
 
-      const cam = w.three.activeCamera
-      const raycaster = new T.Raycaster()
-      const nx = (pointerX / window.innerWidth) * 2 - 1
-      const ny = -(pointerY / window.innerHeight) * 2 + 1
-      raycaster.setFromCamera(new T.Vector2(nx, ny), cam)
+  const applyZoomAtScreenPoint = (newScale: number, pointerX: number, pointerY: number) => {
+    const oldScale = mapGroup.scale.x
+    if (oldScale === newScale) return
 
-      // Use a camera-facing plane rather than the map's local floor plane.
-      // This prevents near-infinite intersection vectors when the map is tilted on-edge, 
-      // preventing the map from being translated lightyears away from the tracking origin.
-      const normal = new T.Vector3(0, 0, 1).applyQuaternion(cam.quaternion).normalize()
-      const plane = new T.Plane().setFromNormalAndCoplanarPoint(normal, mapGroup.position)
-      const hitWorld = new T.Vector3()
-      raycaster.ray.intersectPlane(plane, hitWorld)
+    const raycaster = new T.Raycaster()
+    const currentCam = w.three.camera || w.three.activeCamera || (window as any).XR8.Threejs.xrCamera()
+    const nx = (pointerX / window.innerWidth) * 2 - 1
+    const ny = -(pointerY / window.innerHeight) * 2 + 1
+    raycaster.setFromCamera(new T.Vector2(nx, ny), currentCam)
 
-      if (hitWorld.lengthSq() === 0) {
-        mapGroup.scale.set(newScale, newScale, newScale)
-        return
-      }
+    // Intersect the map's floor plane (Y = mapGroup.y)
+    const normal = new T.Vector3(0, 1, 0)
+    const plane = new T.Plane().setFromNormalAndCoplanarPoint(normal, mapGroup.position)
+    const hitWorld = new T.Vector3()
+    raycaster.ray.intersectPlane(plane, hitWorld)
 
-      const hitLocal = mapGroup.worldToLocal(hitWorld.clone())
+    if (hitWorld.lengthSq() === 0) {
       mapGroup.scale.set(newScale, newScale, newScale)
-      mapGroup.updateMatrixWorld(true)
-      const newHitWorld = mapGroup.localToWorld(hitLocal.clone())
-
-      mapGroup.position.add(hitWorld.sub(newHitWorld))
+      return
     }
 
-    const wheelListener = (e: WheelEvent) => {
-      if ((e.target as HTMLElement).closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-detail')) return
-      if (mapGroup && !isPlacing) {
-        let s = mapGroup.scale.x - e.deltaY * 0.001
+    const hitLocal = mapGroup.worldToLocal(hitWorld.clone())
+    mapGroup.scale.set(newScale, newScale, newScale)
+    mapGroup.updateMatrixWorld(true)
+    const newHitWorld = mapGroup.localToWorld(hitLocal.clone())
+
+    mapGroup.position.add(hitWorld.sub(newHitWorld))
+  }
+
+  const wheelListener = (e: WheelEvent) => {
+    if (isUI(e as any)) return
+    if (!isPlaced) return
+    let s = mapGroup.scale.x - e.deltaY * 0.001
+    s = Math.max(0.1, Math.min(s, 5.0))
+    applyZoomAtScreenPoint(s, e.clientX, e.clientY)
+  }
+
+  window.addEventListener('contextmenu', e => e.preventDefault())
+  window.addEventListener('pointerdown', downListener)
+  window.addEventListener('pointermove', moveListener)
+  window.addEventListener('pointerup', upListener)
+  window.addEventListener('pointerleave', upListener)
+  window.addEventListener('wheel', wheelListener, { passive: false })
+
+  // ── TOUCH CONTROLS (XZ Floor plane locked) ──
+  let touchStartDist = 0
+  let touchStartScale = 1
+  let lastTouchX = 0
+  let lastTouchY = 0
+  let lastAvgX = 0
+  let lastAvgY = 0
+  let touchCount = 0
+
+  window.addEventListener('touchstart', (e: TouchEvent) => {
+    if (isUI(e as any)) return
+    if (!isPlaced) return
+    touchCount = e.touches.length
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      touchStartDist = Math.sqrt(dx * dx + dy * dy)
+      touchStartScale = mapGroup.scale.x
+      lastAvgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      lastAvgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+    } else if (e.touches.length === 1) {
+      lastTouchX = e.touches[0].clientX
+      lastTouchY = e.touches[0].clientY
+    }
+  }, { passive: true })
+
+  window.addEventListener('touchmove', (e: TouchEvent) => {
+    if (isUI(e as any)) return
+    if (!isPlaced) return
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      
+      if (touchStartDist > 0) {
+        let s = touchStartScale * (dist / touchStartDist)
         s = Math.max(0.1, Math.min(s, 5.0))
-        applyZoomAtScreenPoint(s, e.clientX, e.clientY)
+        applyZoomAtScreenPoint(s, (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2)
       }
-    }
 
-    window.addEventListener('contextmenu', e => e.preventDefault())
-    window.addEventListener('pointerdown', downListener)
-    window.addEventListener('pointermove', moveListener)
-    window.addEventListener('pointerup', upListener)
-    window.addEventListener('pointerleave', upListener)
-    window.addEventListener('wheel', wheelListener, { passive: false })
+      if (lastAvgX > 0 && lastAvgY > 0) {
+        const avgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
+        const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+        const dX = avgX - lastAvgX
 
-    // ── TOUCH CONTROLS — pinch zoom + single-finger pan ──
-    let touchStartDist = 0
-    let touchStartScale = 1
-    let lastTouchX = 0
-    let lastTouchY = 0
-    let lastAvgX = 0
-    let lastAvgY = 0
-    let touchCount = 0
+        // 2-finger twist to rotate map (yaw only)
+        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.005)
 
-    window.addEventListener('touchstart', (e: TouchEvent) => {
-      if (isUI(e as any)) return
-      touchCount = e.touches.length
-      if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX
-        const dy = e.touches[0].clientY - e.touches[1].clientY
-        touchStartDist = Math.sqrt(dx * dx + dy * dy)
-        touchStartScale = mapGroup?.scale.x || 1
+        lastAvgX = avgX
+        lastAvgY = avgY
+      } else {
         lastAvgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
         lastAvgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-      } else if (e.touches.length === 1) {
-        lastTouchX = e.touches[0].clientX
-        lastTouchY = e.touches[0].clientY
-      }
-    }, { passive: true })
-
-    window.addEventListener('touchmove', (e: TouchEvent) => {
-      if (!mapGroup || isPlacing) return
-      if (e.touches.length === 2) {
-        // Pinch zoom
-        const dx = e.touches[0].clientX - e.touches[1].clientX
-        const dy = e.touches[0].clientY - e.touches[1].clientY
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        if (touchStartDist > 0) {
-          let s = touchStartScale * (dist / touchStartDist)
-          s = Math.max(0.1, Math.min(s, 5.0))
-          const avgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
-          const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-          applyZoomAtScreenPoint(s, avgX, avgY)
-        }
-
-        // Two-finger rotate (yaw and pitch)
-        if (lastAvgX > 0 && lastAvgY > 0) {
-          const avgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
-          const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-          const dX = avgX - lastAvgX
-          const dY = avgY - lastAvgY
-
-          mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.005)
-
-          lastAvgX = avgX
-          lastAvgY = avgY
-        } else {
-          lastAvgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
-          lastAvgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-        }
-
-      } else if (e.touches.length === 1 && touchCount === 1 && !isPlacing) {
-        // Single finger pan locked to floor
-        const dx = e.touches[0].clientX - lastTouchX
-        const dy = e.touches[0].clientY - lastTouchY
-
-        const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-        right.y = 0; right.normalize()
-        const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-        forward.y = 0; forward.normalize()
-
-        mapGroup.position.add(right.multiplyScalar(-dx * 0.0075))
-        mapGroup.position.add(forward.multiplyScalar(dy * 0.0075))
-
-        lastTouchX = e.touches[0].clientX
-        lastTouchY = e.touches[0].clientY
-      }
-    }, { passive: true })
-
-    window.addEventListener('touchend', (e: TouchEvent) => {
-      touchCount = e.touches.length
-      if (touchCount === 1) {
-        lastTouchX = e.touches[0].clientX
-        lastTouchY = e.touches[0].clientY
-      }
-      if (touchCount < 2) touchStartDist = 0
-    }, { passive: true })
-
-    // ── GYROSCOPE — subtle 3D tilt effect on mobile ──
-    let gyroEnabled = false
-    let baseAlpha = 0, baseBeta = 0, baseGamma = 0
-    let gyroInitialized = false
-
-    function handleOrientation(e: DeviceOrientationEvent) {
-      if (!mapGroup || !e.alpha || !e.beta || !e.gamma) return
-      if (!gyroInitialized) {
-        baseAlpha = e.alpha
-        baseBeta = e.beta
-        baseGamma = e.gamma
-        gyroInitialized = true
-        return
       }
 
-      // Subtle offset — max ±5° rotation from initial orientation
-      const dBeta = ((e.beta - baseBeta) * Math.PI / 180) * 0.15
-      const dGamma = ((e.gamma - baseGamma) * Math.PI / 180) * 0.15
-      const clamp = (v: number, max: number) => Math.max(-max, Math.min(max, v))
+    } else if (e.touches.length === 1 && touchCount === 1) {
+      // 1-finger drag to pan across floor (XZ plane)
+      const dx = e.touches[0].clientX - lastTouchX
+      const dy = e.touches[0].clientY - lastTouchY
 
-      // Apply as a very gentle tilt on top of existing rotation
-      // We store the "base" quaternion and only apply small deltas
-      // For simplicity, just subtly adjust the Y position based on tilt
-      mapGroup.position.y += clamp(dBeta, 0.08) * 0.001
+      const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      right.y = 0; right.normalize()
+      const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+      forward.y = 0; forward.normalize()
+
+      const panSpeed = 0.004 * mapGroup.scale.x
+      mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
+      mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
+
+      // Clamp distance
+      const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
+      const maxDistance = 2.0 // meters
+      if (dist > maxDistance) {
+        const clampDir = new T.Vector3().subVectors(mapGroup.position, mapGroup.userData.originPos).normalize()
+        mapGroup.position.copy(mapGroup.userData.originPos).add(clampDir.multiplyScalar(maxDistance))
+      }
+
+      lastTouchX = e.touches[0].clientX
+      lastTouchY = e.touches[0].clientY
     }
+  }, { passive: true })
 
-    // Request permission on iOS 13+
-    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-      // Will be triggered by user gesture (e.g., a button tap)
-      document.addEventListener('click', () => {
-        if (gyroEnabled) return
-          ; (DeviceOrientationEvent as any).requestPermission().then((state: string) => {
-            if (state === 'granted') {
-              gyroEnabled = true
-              window.addEventListener('deviceorientation', handleOrientation)
-            }
-          }).catch(() => { })
-      }, { once: true })
-    } else {
-      window.addEventListener('deviceorientation', handleOrientation)
+  window.addEventListener('touchend', (e: TouchEvent) => {
+    if (isUI(e as any)) return
+    touchCount = e.touches.length
+    if (touchCount === 1) {
+      lastTouchX = e.touches[0].clientX
+      lastTouchY = e.touches[0].clientY
     }
-  }
+    if (touchCount < 2) touchStartDist = 0
+  }, { passive: true })
 })
