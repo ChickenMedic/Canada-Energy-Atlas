@@ -383,6 +383,7 @@ function buildCanadaMap(scene: any) {
   if (!getThree()) return
   mapGroup = new T.Group()
   mapGroup.name = 'CanadaMap'
+  mapGroup.scale.set(0.5, 0.5, 0.5) // Reduce map size by 50% for AR placement
   labelGroup = new T.Group()
   labelGroup.name = 'ProvinceLabels'
 
@@ -1898,12 +1899,15 @@ function injectUI() {
 
     #ea-place-btn {
       position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-      background: rgba(80, 140, 255, 0.9); color: #fff; border: 1px solid rgba(120, 180, 255, 0.8);
+      background: rgba(100, 100, 100, 0.9); color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(150, 150, 150, 0.5);
       padding: 14px 32px; border-radius: 24px; font-weight: 700; font-size: 15px; text-transform: uppercase;
-      letter-spacing: 1px; cursor: pointer; pointer-events: none; opacity: 0;
+      letter-spacing: 1px; cursor: not-allowed; pointer-events: none; opacity: 1;
       transition: all 0.3s ease; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
-    #ea-place-btn.visible { opacity: 1; pointer-events: auto; }
+    #ea-place-btn.visible { 
+      background: rgba(80, 140, 255, 0.9); color: #fff; border: 1px solid rgba(120, 180, 255, 0.8);
+      pointer-events: auto; cursor: pointer;
+    }
     #ea-place-btn:hover { background: rgba(100, 160, 255, 1); transform: translateX(-50%) scale(1.05); }
 
     @media (min-width: 768px) {
@@ -1920,7 +1924,7 @@ function injectUI() {
   // ── Place Button ──
   const placeBtn = document.createElement('button')
   placeBtn.id = 'ea-place-btn'
-  placeBtn.innerText = 'Tap to Place Map'
+  placeBtn.innerText = 'WAITING FOR SURFACE...'
   document.body.appendChild(placeBtn)
 
   // ── Title with auto-fade ──
@@ -2663,8 +2667,15 @@ ecs.registerBehavior((w: any) => {
   
       reticle.visible = true
   
-      if (hasFoundSurfaceEver && Date.now() > placementReadyTime && placeBtn && !placeBtn.classList.contains('visible')) {
-        placeBtn.classList.add('visible')
+      let isReady = hasFoundSurfaceEver && Date.now() > placementReadyTime && hitSuccess;
+      if (placeBtn) {
+        if (isReady && !placeBtn.classList.contains('visible')) {
+          placeBtn.classList.add('visible')
+          placeBtn.innerText = 'TAP TO PLACE MAP'
+        } else if (!isReady && placeBtn.classList.contains('visible')) {
+          placeBtn.classList.remove('visible')
+          placeBtn.innerText = 'WAITING FOR SURFACE...'
+        }
       }
       
       requestAnimationFrame(updatePlacement)
@@ -2730,7 +2741,7 @@ ecs.registerBehavior((w: any) => {
       const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
       forward.y = 0; forward.normalize()
 
-      const panSpeed = 0.004 * mapGroup.scale.x
+      const panSpeed = 0.02 * mapGroup.scale.x
       mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
 
