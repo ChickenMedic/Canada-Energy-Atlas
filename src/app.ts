@@ -2593,10 +2593,12 @@ ecs.registerBehavior((w: any) => {
   let hasFoundSurfaceEver = false
   let placementReadyTime = 0
 
-  // AR Surface Reticle (White disk for placement)
-  const reticleGeom = new T.CylinderGeometry(0.5, 0.5, 0.05, 32)
-  const reticleMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })
+  // AR Surface Reticle (White ring for placement)
+  const reticleGeom = new T.RingGeometry(0.15, 0.2, 32)
+  reticleGeom.rotateX(-Math.PI / 2) // Lay it perfectly flat
+  const reticleMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false })
   const reticle = new T.Mesh(reticleGeom, reticleMat)
+  reticle.renderOrder = 999 // Ensure it renders on top
   w.three.scene.add(reticle)
   
   const placeBtn = document.getElementById('ea-place-btn')
