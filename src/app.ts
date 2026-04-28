@@ -2646,17 +2646,30 @@ ecs.registerBehavior((w: any) => {
             
             let normal = new T.Vector3(0, 1, 0).applyQuaternion(targetQuat)
             const heightDrop = cam.position.y - hit.position.y
-            if (normal.y > 0.7 && heightDrop < 0.6) {
-               // Infer vertical wall because hit is near eye-level with default UP normal
-               const camLook = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+            const camLook = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+
+            if (normal.y > 0.8 && heightDrop < 0.6 && camLook.y > -0.4) {
                normal.set(-camLook.x, 0, -camLook.z).normalize()
-               const yAxis = normal.clone()
-               let zAxis = new T.Vector3(0, -1, 0)
-               const xAxis = new T.Vector3().crossVectors(yAxis, zAxis).normalize()
-               if (xAxis.lengthSq() < 0.001) xAxis.set(1, 0, 0)
-               zAxis.crossVectors(xAxis, yAxis).normalize()
-               targetQuat.setFromRotationMatrix(new T.Matrix4().makeBasis(xAxis, yAxis, zAxis))
             }
+            if (normal.lengthSq() < 0.001) normal.set(0, 1, 0)
+            
+            const yAxis = normal.clone().normalize()
+            let zRef = new T.Vector3()
+            if (normal.y > 0.8) {
+               zRef.set(cam.position.x - hit.position.x, 0, cam.position.z - hit.position.z).normalize()
+               if (zRef.lengthSq() < 0.001) zRef.set(0, 0, 1)
+            } else {
+               zRef.set(0, -1, 0)
+            }
+            
+            let zAxis = zRef.projectOnPlane(normal).normalize()
+            if (zAxis.lengthSq() < 0.001) zAxis.set(0, 0, 1)
+            
+            const xAxis = new T.Vector3().crossVectors(yAxis, zAxis).normalize()
+            if (xAxis.lengthSq() < 0.001) xAxis.set(1, 0, 0)
+            zAxis.crossVectors(xAxis, yAxis).normalize()
+            
+            targetQuat.setFromRotationMatrix(new T.Matrix4().makeBasis(xAxis, yAxis, zAxis))
             
             reticle.position.lerp(targetPos, 0.1)
             reticle.quaternion.slerp(targetQuat, 0.1)
@@ -2705,22 +2718,7 @@ ecs.registerBehavior((w: any) => {
         reticle.visible = false
 
         mapGroup.position.copy(reticle.position)
-        const normal = new T.Vector3(0, 1, 0).applyQuaternion(reticle.quaternion)
-        if (Math.abs(normal.y) > 0.7) {
-          mapGroup.quaternion.copy(reticle.quaternion)
-          const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
-          if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
-          mapGroup.lookAt(target)
-          mapGroup.rotateY(Math.PI)
-        } else {
-          const yAxis = normal.clone().normalize()
-          let zAxis = new T.Vector3(0, -1, 0)
-          const xAxis = new T.Vector3().crossVectors(yAxis, zAxis).normalize()
-          if (xAxis.lengthSq() < 0.001) xAxis.set(1, 0, 0)
-          zAxis.crossVectors(xAxis, yAxis).normalize()
-          const mat = new T.Matrix4().makeBasis(xAxis, yAxis, zAxis)
-          mapGroup.quaternion.setFromRotationMatrix(mat)
-        }
+        mapGroup.quaternion.copy(reticle.quaternion)
 
         mapGroup.userData.originPos = mapGroup.position.clone()
 
