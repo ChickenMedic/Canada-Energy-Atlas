@@ -2645,7 +2645,7 @@ ecs.registerBehavior((w: any) => {
             hitSuccess = true
             if (!hasFoundSurfaceEver) {
               hasFoundSurfaceEver = true
-              placementReadyTime = Date.now() + 1500
+              placementReadyTime = Date.now() + 5000
             }
           }
         } catch (e) {}
