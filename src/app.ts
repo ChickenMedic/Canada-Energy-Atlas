@@ -2649,7 +2649,7 @@ ecs.registerBehavior((w: any) => {
             hitSuccess = true
             if (!hasFoundSurfaceEver) {
               hasFoundSurfaceEver = true
-              placementReadyTime = Date.now() + 5000
+              placementReadyTime = Date.now() + 2000
             }
           }
         } catch (e) {}
@@ -2691,10 +2691,22 @@ ecs.registerBehavior((w: any) => {
         reticle.visible = false
 
         mapGroup.position.copy(reticle.position)
-        const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
-        if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
-        mapGroup.lookAt(target)
-        mapGroup.rotateY(Math.PI)
+        const normal = new T.Vector3(0, 1, 0).applyQuaternion(reticle.quaternion)
+        if (Math.abs(normal.y) > 0.8) {
+          mapGroup.quaternion.copy(reticle.quaternion)
+          const target = new T.Vector3(cam.position.x, mapGroup.position.y, cam.position.z)
+          if (target.distanceTo(mapGroup.position) < 0.001) target.z += 0.001
+          mapGroup.lookAt(target)
+          mapGroup.rotateY(Math.PI)
+        } else {
+          const yAxis = normal.clone().normalize()
+          let zAxis = new T.Vector3(0, -1, 0)
+          const xAxis = new T.Vector3().crossVectors(yAxis, zAxis).normalize()
+          if (xAxis.lengthSq() < 0.001) xAxis.set(1, 0, 0)
+          zAxis.crossVectors(xAxis, yAxis).normalize()
+          const mat = new T.Matrix4().makeBasis(xAxis, yAxis, zAxis)
+          mapGroup.quaternion.setFromRotationMatrix(mat)
+        }
 
         mapGroup.userData.originPos = mapGroup.position.clone()
 
@@ -2735,15 +2747,15 @@ ecs.registerBehavior((w: any) => {
       // Left Click spins the map (yaw only)
       mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.005)
     } else if (isPanning) {
-      // Right Click translates the map (locked to floor)
-      const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-      right.y = 0; right.normalize()
-      const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-      forward.y = 0; forward.normalize()
+      const normal = new T.Vector3(0, 1, 0).applyQuaternion(mapGroup.quaternion)
+      const camRight = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      const panRight = camRight.projectOnPlane(normal).normalize()
+      const camUp = new T.Vector3(0, 1, 0).applyQuaternion(cam.quaternion)
+      const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.008 * mapGroup.scale.x
-      mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
-      mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
+      mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
+      mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
 
       // Clamp distance
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
@@ -2866,14 +2878,15 @@ ecs.registerBehavior((w: any) => {
       const dx = e.touches[0].clientX - lastTouchX
       const dy = e.touches[0].clientY - lastTouchY
 
-      const right = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
-      right.y = 0; right.normalize()
-      const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-      forward.y = 0; forward.normalize()
+      const normal = new T.Vector3(0, 1, 0).applyQuaternion(mapGroup.quaternion)
+      const camRight = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      const panRight = camRight.projectOnPlane(normal).normalize()
+      const camUp = new T.Vector3(0, 1, 0).applyQuaternion(cam.quaternion)
+      const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.008 * mapGroup.scale.x
-      mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
-      mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
+      mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
+      mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
 
       // Clamp distance
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
