@@ -383,7 +383,7 @@ function buildCanadaMap(scene: any) {
   if (!getThree()) return
   mapGroup = new T.Group()
   mapGroup.name = 'CanadaMap'
-  mapGroup.scale.set(0.5, 0.5, 0.5) // Reduce map size by 50% for AR placement
+  mapGroup.scale.set(0.25, 0.25, 0.25) // Reduce map size by another 50% (25% total)
   labelGroup = new T.Group()
   labelGroup.name = 'ProvinceLabels'
 
@@ -1899,7 +1899,7 @@ function injectUI() {
 
     #ea-place-btn {
       position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-      background: rgba(100, 100, 100, 0.9); color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(150, 150, 150, 0.5);
+      background: rgba(220, 100, 40, 0.95); color: #fff; border: 2px solid rgba(255, 150, 80, 0.8);
       padding: 14px 32px; border-radius: 24px; font-weight: 700; font-size: 15px; text-transform: uppercase;
       letter-spacing: 1px; cursor: not-allowed; pointer-events: none; opacity: 1;
       transition: all 0.3s ease; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -2741,7 +2741,7 @@ ecs.registerBehavior((w: any) => {
       const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
       forward.y = 0; forward.normalize()
 
-      const panSpeed = 0.02 * mapGroup.scale.x
+      const panSpeed = 0.008 * mapGroup.scale.x
       mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
 
@@ -2871,7 +2871,7 @@ ecs.registerBehavior((w: any) => {
       const forward = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
       forward.y = 0; forward.normalize()
 
-      const panSpeed = 0.004 * mapGroup.scale.x
+      const panSpeed = 0.008 * mapGroup.scale.x
       mapGroup.position.add(right.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(forward.multiplyScalar(dy * panSpeed))
 
