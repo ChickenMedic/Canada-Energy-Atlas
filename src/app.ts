@@ -386,7 +386,7 @@ function buildCanadaMap(scene: any) {
   mapGroup.scale.set(0.25, 0.25, 0.25) // Reduce map size by another 50% (25% total)
 
   // AR Pedestal Base
-  const padGeom = new T.CylinderGeometry(10.0, 10.0, 0.02, 64)
+  const padGeom = new T.CylinderGeometry(5.0, 5.0, 0.02, 64)
   const padMat = new T.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, depthWrite: false })
   const padMesh = new T.Mesh(padGeom, padMat)
   padMesh.position.y = -0.06
@@ -2830,8 +2830,9 @@ ecs.registerBehavior((w: any) => {
       const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.0125 * mapGroup.scale.x
+      const isWall = ((window as any).currentOrientationMode === 'wall')
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
-      mapGroup.position.add(panUp.multiplyScalar(-dy * panSpeed))
+      mapGroup.position.add(panUp.multiplyScalar((isWall ? -dy : dy) * panSpeed))
 
       // Clamp distance
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
@@ -2964,8 +2965,9 @@ ecs.registerBehavior((w: any) => {
       const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.0125 * mapGroup.scale.x
+      const isWall = ((window as any).currentOrientationMode === 'wall')
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
-      mapGroup.position.add(panUp.multiplyScalar(-dy * panSpeed))
+      mapGroup.position.add(panUp.multiplyScalar((isWall ? -dy : dy) * panSpeed))
 
       // Clamp distance
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
