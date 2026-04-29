@@ -1183,7 +1183,7 @@ function setupClickHandler() {
   const mouse = new T.Vector2()
 
   const onClick = (e: PointerEvent) => {
-    if ((e.target as HTMLElement).closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-title, #ea-detail')) return
+    if ((e.target as HTMLElement).closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-title, #ea-detail, #ea-place-btn, #ea-orientation-btn')) return
     if (!mapGroup || !mapGroup.visible) return
 
     // Dynamically fetch the active camera to ensure we don't use a stale reference
@@ -2798,7 +2798,7 @@ ecs.registerBehavior((w: any) => {
 
   const isUI = (e: PointerEvent | TouchEvent) => {
     const t = 'target' in e ? e.target as HTMLElement : null
-    return t?.closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-detail, #ea-title') !== null
+    return t?.closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-detail, #ea-title, #ea-place-btn, #ea-orientation-btn') !== null
   }
 
   const downListener = (e: PointerEvent) => {
