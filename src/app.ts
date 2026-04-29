@@ -1917,6 +1917,15 @@ function injectUI() {
     }
     #ea-place-btn:hover { background: rgba(100, 160, 255, 1); transform: translateX(-50%) scale(1.05); }
 
+    #ea-orientation-btn {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: rgba(40, 40, 40, 0.9); color: #fff; border: 1px solid rgba(100, 100, 100, 0.8);
+      padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; text-transform: uppercase;
+      letter-spacing: 1px; cursor: pointer; pointer-events: auto; opacity: 1;
+      transition: all 0.3s ease; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    #ea-orientation-btn:hover { background: rgba(60, 60, 60, 1); transform: translateX(-50%) scale(1.05); }
+
     @media (min-width: 768px) {
       #ea-drawer, #ea-detail { left: 50%; right: auto; width: 600px; transform: translateX(-50%) translateY(100%); }
       #ea-drawer.open, #ea-detail.open { transform: translateX(-50%) translateY(0); }
@@ -1933,6 +1942,18 @@ function injectUI() {
   placeBtn.id = 'ea-place-btn'
   placeBtn.innerText = 'WAITING FOR SURFACE...'
   document.body.appendChild(placeBtn)
+
+  // ── Orientation Button ──
+  const orientationBtn = document.createElement('button')
+  orientationBtn.id = 'ea-orientation-btn'
+  orientationBtn.innerText = 'MODE: FLOOR'
+  ;(window as any).currentOrientationMode = 'floor'
+  orientationBtn.addEventListener('click', (e) => {
+    e.preventDefault()
+    ;(window as any).currentOrientationMode = (window as any).currentOrientationMode === 'floor' ? 'wall' : 'floor'
+    orientationBtn.innerText = `MODE: ${(window as any).currentOrientationMode.toUpperCase()}`
+  })
+  document.body.appendChild(orientationBtn)
 
   // ── Title with auto-fade ──
   const title = document.createElement('div')
@@ -2618,6 +2639,8 @@ ecs.registerBehavior((w: any) => {
     isPlaced = true
     reticle.visible = false
     if (placeBtn) placeBtn.style.display = 'none'
+    const oBtn = document.getElementById('ea-orientation-btn')
+    if (oBtn) oBtn.style.display = 'none'
 
     const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
     mapGroup.position.copy(cam.position).add(dir.multiplyScalar(2.0))
@@ -2658,17 +2681,19 @@ ecs.registerBehavior((w: any) => {
             const worldCamQuat = new T.Quaternion()
             cam.getWorldQuaternion(worldCamQuat)
             
-            const heightDrop = worldCamPos.y - hit.position.y
             const camLook = new T.Vector3(0, 0, -1).applyQuaternion(worldCamQuat)
+            const mode = (window as any).currentOrientationMode || 'floor'
 
-            if (normal.y > 0.8 && heightDrop < 0.6 && camLook.y > -0.4) {
+            if (mode === 'wall') {
                normal.set(-camLook.x, 0, -camLook.z).normalize()
+            } else {
+               normal.set(0, 1, 0)
             }
             if (normal.lengthSq() < 0.001) normal.set(0, 1, 0)
             
             const yAxis = normal.clone().normalize()
             let zRef = new T.Vector3()
-            if (normal.y > 0.8) {
+            if (mode === 'floor') {
                zRef.set(hit.position.x - worldCamPos.x, 0, hit.position.z - worldCamPos.z).normalize()
                if (zRef.lengthSq() < 0.001) zRef.set(0, 0, 1)
             } else {
@@ -2738,6 +2763,8 @@ ecs.registerBehavior((w: any) => {
            reticle.visible = true
            placeBtn.innerText = 'TAP TO PLACE MAP'
            placeBtn.style.backgroundColor = ''
+           const oBtn = document.getElementById('ea-orientation-btn')
+           if (oBtn) oBtn.style.display = 'block'
            updatePlacement()
            return
         }
@@ -2745,6 +2772,8 @@ ecs.registerBehavior((w: any) => {
         isPlaced = true
         placeBtn.innerText = 'PICK UP MAP'
         placeBtn.style.backgroundColor = '#333333'
+        const oBtn = document.getElementById('ea-orientation-btn')
+        if (oBtn) oBtn.style.display = 'none'
         reticle.visible = false
 
         mapGroup.position.copy(reticle.position)
