@@ -2645,8 +2645,14 @@ ecs.registerBehavior((w: any) => {
             let targetQuat = new T.Quaternion(hit.rotation.x, hit.rotation.y, hit.rotation.z, hit.rotation.w)
             
             let normal = new T.Vector3(0, 1, 0).applyQuaternion(targetQuat)
-            const heightDrop = cam.position.y - hit.position.y
-            const camLook = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
+            
+            const worldCamPos = new T.Vector3()
+            cam.getWorldPosition(worldCamPos)
+            const worldCamQuat = new T.Quaternion()
+            cam.getWorldQuaternion(worldCamQuat)
+            
+            const heightDrop = worldCamPos.y - hit.position.y
+            const camLook = new T.Vector3(0, 0, -1).applyQuaternion(worldCamQuat)
 
             if (normal.y > 0.8 && heightDrop < 0.6 && camLook.y > -0.4) {
                normal.set(-camLook.x, 0, -camLook.z).normalize()
@@ -2656,7 +2662,7 @@ ecs.registerBehavior((w: any) => {
             const yAxis = normal.clone().normalize()
             let zRef = new T.Vector3()
             if (normal.y > 0.8) {
-               zRef.set(cam.position.x - hit.position.x, 0, cam.position.z - hit.position.z).normalize()
+               zRef.set(worldCamPos.x - hit.position.x, 0, worldCamPos.z - hit.position.z).normalize()
                if (zRef.lengthSq() < 0.001) zRef.set(0, 0, 1)
             } else {
                zRef.set(0, -1, 0)
@@ -2684,8 +2690,13 @@ ecs.registerBehavior((w: any) => {
   
       if (!hitSuccess) {
         if (!hasFoundSurfaceEver) {
-          const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
-          const targetPos = cam.position.clone().add(dir.multiplyScalar(1.5))
+          const worldCamQuat = new T.Quaternion()
+          cam.getWorldQuaternion(worldCamQuat)
+          const dir = new T.Vector3(0, 0, -1).applyQuaternion(worldCamQuat)
+          
+          const worldCamPos = new T.Vector3()
+          cam.getWorldPosition(worldCamPos)
+          const targetPos = worldCamPos.clone().add(dir.multiplyScalar(1.5))
           targetPos.y -= 1.0
           reticle.position.lerp(targetPos, 0.1)
         }
@@ -2760,12 +2771,15 @@ ecs.registerBehavior((w: any) => {
       mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.005)
     } else if (isPanning) {
       const normal = new T.Vector3(0, 1, 0).applyQuaternion(mapGroup.quaternion)
-      const camRight = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      const worldCamQuat = new T.Quaternion()
+      cam.getWorldQuaternion(worldCamQuat)
+      
+      const camRight = new T.Vector3(1, 0, 0).applyQuaternion(worldCamQuat)
       const panRight = camRight.projectOnPlane(normal).normalize()
-      const camUp = new T.Vector3(0, 1, 0).applyQuaternion(cam.quaternion)
+      const camUp = new T.Vector3(0, 1, 0).applyQuaternion(worldCamQuat)
       const panUp = camUp.projectOnPlane(normal).normalize()
 
-      const panSpeed = 0.008 * mapGroup.scale.x
+      const panSpeed = 0.025 * mapGroup.scale.x
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
 
@@ -2876,7 +2890,7 @@ ecs.registerBehavior((w: any) => {
         const dX = avgX - lastAvgX
 
         // 2-finger twist to rotate map (yaw only)
-        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.005)
+        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.02)
 
         lastAvgX = avgX
         lastAvgY = avgY
@@ -2891,12 +2905,15 @@ ecs.registerBehavior((w: any) => {
       const dy = e.touches[0].clientY - lastTouchY
 
       const normal = new T.Vector3(0, 1, 0).applyQuaternion(mapGroup.quaternion)
-      const camRight = new T.Vector3(1, 0, 0).applyQuaternion(cam.quaternion)
+      const worldCamQuat = new T.Quaternion()
+      cam.getWorldQuaternion(worldCamQuat)
+      
+      const camRight = new T.Vector3(1, 0, 0).applyQuaternion(worldCamQuat)
       const panRight = camRight.projectOnPlane(normal).normalize()
-      const camUp = new T.Vector3(0, 1, 0).applyQuaternion(cam.quaternion)
+      const camUp = new T.Vector3(0, 1, 0).applyQuaternion(worldCamQuat)
       const panUp = camUp.projectOnPlane(normal).normalize()
 
-      const panSpeed = 0.008 * mapGroup.scale.x
+      const panSpeed = 0.025 * mapGroup.scale.x
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
 
