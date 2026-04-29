@@ -386,7 +386,7 @@ function buildCanadaMap(scene: any) {
   mapGroup.scale.set(0.25, 0.25, 0.25) // Reduce map size by another 50% (25% total)
 
   // AR Pedestal Base
-  const padGeom = new T.CylinderGeometry(3.0, 3.0, 0.02, 64)
+  const padGeom = new T.CylinderGeometry(3.9, 3.9, 0.02, 64)
   const padMat = new T.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, depthWrite: false })
   const padMesh = new T.Mesh(padGeom, padMat)
   padMesh.position.y = -0.06
@@ -1792,11 +1792,12 @@ function injectUI() {
     /* ── Hamburger toggle buttons ── */
     .ea-hamburger {
       position: fixed; top: 10px; z-index: 1010;
-      width: 32px; height: 32px; border-radius: 6px;
+      height: 32px; border-radius: 6px; padding: 0 12px;
       background: rgba(20,30,50,0.9); border: 1px solid rgba(100,180,255,0.3);
-      display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px;
+      display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 8px;
       cursor: pointer; pointer-events: all;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #8ac4ff; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
     }
     .ea-hamburger span { display: block; width: 16px; height: 2px; background: #8ac4ff; border-radius: 1px; }
     #ea-hamburger-left { left: 10px; }
@@ -1975,7 +1976,7 @@ function injectUI() {
   const hLeft = document.createElement('div')
   hLeft.id = 'ea-hamburger-left'
   hLeft.className = 'ea-hamburger'
-  hLeft.innerHTML = '<span></span><span></span><span></span>'
+  hLeft.innerHTML = '<div style="display:flex;flex-direction:column;gap:3px"><span></span><span></span><span></span></div> LAYERS'
   hLeft.onclick = () => document.getElementById('ea-panel-left')?.classList.toggle('collapsed')
   document.body.appendChild(hLeft)
 
@@ -1983,7 +1984,7 @@ function injectUI() {
   const hRight = document.createElement('div')
   hRight.id = 'ea-hamburger-right'
   hRight.className = 'ea-hamburger'
-  hRight.innerHTML = '<span></span><span></span><span></span>'
+  hRight.innerHTML = 'DATA <div style="display:flex;flex-direction:column;gap:3px"><span></span><span></span><span></span></div>'
   hRight.onclick = () => document.getElementById('ea-panel-right')?.classList.toggle('collapsed')
   document.body.appendChild(hRight)
 
@@ -2685,7 +2686,7 @@ ecs.registerBehavior((w: any) => {
             const mode = (window as any).currentOrientationMode || 'floor'
 
             if (mode === 'wall') {
-               normal.set(-camLook.x, 0, -camLook.z).normalize()
+               normal.set(camLook.x, 0, camLook.z).normalize()
             } else {
                normal.set(0, 1, 0)
             }
@@ -2828,8 +2829,8 @@ ecs.registerBehavior((w: any) => {
       const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.0125 * mapGroup.scale.x
-      mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
-      mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
+      mapGroup.position.add(panRight.multiplyScalar(dx * panSpeed))
+      mapGroup.position.add(panUp.multiplyScalar(-dy * panSpeed))
 
       // Clamp distance
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
@@ -2962,8 +2963,8 @@ ecs.registerBehavior((w: any) => {
       const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.0125 * mapGroup.scale.x
-      mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
-      mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
+      mapGroup.position.add(panRight.multiplyScalar(dx * panSpeed))
+      mapGroup.position.add(panUp.multiplyScalar(-dy * panSpeed))
 
       // Clamp distance
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
