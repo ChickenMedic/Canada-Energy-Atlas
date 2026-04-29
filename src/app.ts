@@ -386,10 +386,10 @@ function buildCanadaMap(scene: any) {
   mapGroup.scale.set(0.25, 0.25, 0.25) // Reduce map size by another 50% (25% total)
 
   // AR Pedestal Base
-  const padGeom = new T.CylinderGeometry(2.5, 2.5, 0.02, 64)
-  const padMat = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15, depthWrite: false })
+  const padGeom = new T.CylinderGeometry(3.0, 3.0, 0.02, 64)
+  const padMat = new T.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, depthWrite: false })
   const padMesh = new T.Mesh(padGeom, padMat)
-  padMesh.position.y = -0.01
+  padMesh.position.y = -0.06
   mapGroup.add(padMesh)
   labelGroup = new T.Group()
   labelGroup.name = 'ProvinceLabels'
@@ -1918,7 +1918,7 @@ function injectUI() {
     #ea-place-btn:hover { background: rgba(100, 160, 255, 1); transform: translateX(-50%) scale(1.05); }
 
     #ea-orientation-btn {
-      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
       background: rgba(40, 40, 40, 0.9); color: #fff; border: 1px solid rgba(100, 100, 100, 0.8);
       padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; text-transform: uppercase;
       letter-spacing: 1px; cursor: pointer; pointer-events: auto; opacity: 1;
@@ -2628,7 +2628,7 @@ ecs.registerBehavior((w: any) => {
   // AR Surface Reticle (White ring for placement)
   const reticleGeom = new T.RingGeometry(0.15, 0.2, 32)
   reticleGeom.rotateX(-Math.PI / 2) // Lay it perfectly flat
-  const reticleMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false })
+  const reticleMat = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthTest: false, side: T.DoubleSide })
   const reticle = new T.Mesh(reticleGeom, reticleMat)
   reticle.renderOrder = 999 // Ensure it renders on top
   w.three.scene.add(reticle)
@@ -2694,10 +2694,10 @@ ecs.registerBehavior((w: any) => {
             const yAxis = normal.clone().normalize()
             let zRef = new T.Vector3()
             if (mode === 'floor') {
-               zRef.set(hit.position.x - worldCamPos.x, 0, hit.position.z - worldCamPos.z).normalize()
+               zRef.set(worldCamPos.x - hit.position.x, 0, worldCamPos.z - hit.position.z).normalize()
                if (zRef.lengthSq() < 0.001) zRef.set(0, 0, 1)
             } else {
-               zRef.set(0, 1, 0)
+               zRef.set(0, -1, 0)
             }
             
             let zAxis = zRef.projectOnPlane(normal).normalize()
