@@ -384,6 +384,13 @@ function buildCanadaMap(scene: any) {
   mapGroup = new T.Group()
   mapGroup.name = 'CanadaMap'
   mapGroup.scale.set(0.25, 0.25, 0.25) // Reduce map size by another 50% (25% total)
+
+  // AR Pedestal Base
+  const padGeom = new T.CylinderGeometry(2.5, 2.5, 0.02, 64)
+  const padMat = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15, depthWrite: false })
+  const padMesh = new T.Mesh(padGeom, padMat)
+  padMesh.position.y = -0.01
+  mapGroup.add(padMesh)
   labelGroup = new T.Group()
   labelGroup.name = 'ProvinceLabels'
 
@@ -2662,10 +2669,10 @@ ecs.registerBehavior((w: any) => {
             const yAxis = normal.clone().normalize()
             let zRef = new T.Vector3()
             if (normal.y > 0.8) {
-               zRef.set(worldCamPos.x - hit.position.x, 0, worldCamPos.z - hit.position.z).normalize()
+               zRef.set(hit.position.x - worldCamPos.x, 0, hit.position.z - worldCamPos.z).normalize()
                if (zRef.lengthSq() < 0.001) zRef.set(0, 0, 1)
             } else {
-               zRef.set(0, -1, 0)
+               zRef.set(0, 1, 0)
             }
             
             let zAxis = zRef.projectOnPlane(normal).normalize()
@@ -2724,8 +2731,20 @@ ecs.registerBehavior((w: any) => {
       placeBtn.addEventListener('click', (e) => {
         e.preventDefault()
         if (!hasFoundSurfaceEver) return
+        
+        if (isPlaced) {
+           isPlaced = false
+           mapGroup.visible = false
+           reticle.visible = true
+           placeBtn.innerText = 'TAP TO PLACE MAP'
+           placeBtn.style.backgroundColor = ''
+           updatePlacement()
+           return
+        }
+
         isPlaced = true
-        placeBtn.classList.remove('visible')
+        placeBtn.innerText = 'PICK UP MAP'
+        placeBtn.style.backgroundColor = '#333333'
         reticle.visible = false
 
         mapGroup.position.copy(reticle.position)
@@ -2768,7 +2787,7 @@ ecs.registerBehavior((w: any) => {
 
     if (isSpinning) {
       // Left Click spins the map (yaw only)
-      mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.005)
+      mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.00375)
     } else if (isPanning) {
       const normal = new T.Vector3(0, 1, 0).applyQuaternion(mapGroup.quaternion)
       const worldCamQuat = new T.Quaternion()
@@ -2779,7 +2798,7 @@ ecs.registerBehavior((w: any) => {
       const camUp = new T.Vector3(0, 1, 0).applyQuaternion(worldCamQuat)
       const panUp = camUp.projectOnPlane(normal).normalize()
 
-      const panSpeed = 0.025 * mapGroup.scale.x
+      const panSpeed = 0.0125 * mapGroup.scale.x
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
 
@@ -2890,7 +2909,7 @@ ecs.registerBehavior((w: any) => {
         const dX = avgX - lastAvgX
 
         // 2-finger twist to rotate map (yaw only)
-        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.02)
+        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.01125)
 
         lastAvgX = avgX
         lastAvgY = avgY
@@ -2913,7 +2932,7 @@ ecs.registerBehavior((w: any) => {
       const camUp = new T.Vector3(0, 1, 0).applyQuaternion(worldCamQuat)
       const panUp = camUp.projectOnPlane(normal).normalize()
 
-      const panSpeed = 0.025 * mapGroup.scale.x
+      const panSpeed = 0.0125 * mapGroup.scale.x
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar(dy * panSpeed))
 
