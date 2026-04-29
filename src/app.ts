@@ -386,7 +386,7 @@ function buildCanadaMap(scene: any) {
   mapGroup.scale.set(0.25, 0.25, 0.25) // Reduce map size by another 50% (25% total)
 
   // AR Pedestal Base
-  const padGeom = new T.CylinderGeometry(3.9, 3.9, 0.02, 64)
+  const padGeom = new T.CylinderGeometry(10.0, 10.0, 0.02, 64)
   const padMat = new T.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, depthWrite: false })
   const padMesh = new T.Mesh(padGeom, padMat)
   padMesh.position.y = -0.06
@@ -2696,7 +2696,7 @@ ecs.registerBehavior((w: any) => {
             const yAxis = normal.clone().normalize()
             let zRef = new T.Vector3()
             if (mode === 'floor') {
-               zRef.set(worldCamPos.x - hit.position.x, 0, worldCamPos.z - hit.position.z).normalize()
+               zRef.set(hit.position.x - worldCamPos.x, 0, hit.position.z - worldCamPos.z).normalize()
                if (zRef.lengthSq() < 0.001) zRef.set(0, 0, 1)
             } else {
                zRef.set(0, -1, 0)
@@ -2830,7 +2830,7 @@ ecs.registerBehavior((w: any) => {
       const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.0125 * mapGroup.scale.x
-      mapGroup.position.add(panRight.multiplyScalar(dx * panSpeed))
+      mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar(-dy * panSpeed))
 
       // Clamp distance
@@ -2964,7 +2964,7 @@ ecs.registerBehavior((w: any) => {
       const panUp = camUp.projectOnPlane(normal).normalize()
 
       const panSpeed = 0.0125 * mapGroup.scale.x
-      mapGroup.position.add(panRight.multiplyScalar(dx * panSpeed))
+      mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar(-dy * panSpeed))
 
       // Clamp distance
