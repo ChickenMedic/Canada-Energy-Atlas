@@ -1184,6 +1184,7 @@ function setupClickHandler() {
 
   const onClick = (e: PointerEvent) => {
     if ((e.target as HTMLElement).closest('#ea-drawer, #ea-panel-left, #ea-panel-right, #ea-hamburger-left, #ea-hamburger-right, #ea-title, #ea-detail')) return
+    if (!mapGroup || !mapGroup.visible) return
 
     // Dynamically fetch the active camera to ensure we don't use a stale reference
     const currentCam = world?.three?.activeCamera
@@ -2817,7 +2818,7 @@ ecs.registerBehavior((w: any) => {
 
     if (isSpinning) {
       // Left Click spins the map (yaw only)
-      mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dx * 0.00375)
+      mapGroup.rotateY(dx * 0.00375)
     } else if (isPanning) {
       const normal = new T.Vector3(0, 1, 0).applyQuaternion(mapGroup.quaternion)
       const worldCamQuat = new T.Quaternion()
@@ -2939,7 +2940,7 @@ ecs.registerBehavior((w: any) => {
         const dX = avgX - lastAvgX
 
         // 2-finger twist to rotate map (yaw only)
-        mapGroup.rotateOnWorldAxis(new T.Vector3(0, 1, 0), dX * 0.01125)
+        mapGroup.rotateY(dX * 0.01125)
 
         lastAvgX = avgX
         lastAvgY = avgY
