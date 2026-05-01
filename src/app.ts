@@ -1839,15 +1839,15 @@ function injectUI() {
 
     /* ── Drawer ── */
     #ea-drawer {
-      position: fixed; bottom: 0; left: 0; right: 0;
+      position: fixed; bottom: 105px; left: 10px; right: 10px;
       max-height: 45vh; overflow-y: auto;
       background: rgba(8,12,24,0.93); backdrop-filter: blur(14px);
-      border-top: 1px solid rgba(80,140,255,0.18);
-      border-radius: 14px 14px 0 0;
+      border: 1px solid rgba(80,140,255,0.18);
+      border-radius: 14px;
       pointer-events: all; z-index: 1015;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #d8e2ee;
-      transform: translateY(100%); transition: transform 0.25s ease-out;
+      transform: translateY(calc(100% + 120px)); transition: transform 0.25s ease-out;
       scrollbar-width: thin; scrollbar-color: rgba(80,140,255,0.2) transparent;
     }
     #ea-drawer.open { transform: translateY(0); }
@@ -1860,15 +1860,15 @@ function injectUI() {
 
     /* Detail panel */
     #ea-detail {
-      position: fixed; bottom: 0; left: 0; right: 0;
+      position: fixed; bottom: 105px; left: 10px; right: 10px;
       max-height: 55vh; overflow-y: auto;
       background: rgba(8,12,24,0.95); backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(80,140,255,0.25);
-      border-radius: 14px 14px 0 0;
+      border: 1px solid rgba(80,140,255,0.25);
+      border-radius: 14px;
       pointer-events: all; z-index: 1025;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: #d8e2ee; padding: 12px 14px 18px;
-      transform: translateY(100%); transition: transform 0.25s ease-out;
+      transform: translateY(calc(100% + 120px)); transition: transform 0.25s ease-out;
     }
     #ea-detail.open { transform: translateY(0); }
     .detail-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(80,140,255,0.12); position: sticky; top: -12px; background: rgba(8,12,24,0.98); z-index: 10; padding-top: 12px; margin-top: -12px; }
@@ -1929,7 +1929,7 @@ function injectUI() {
     #ea-orientation-btn:hover { background: rgba(60, 60, 60, 1); transform: translateX(-50%) scale(1.05); }
 
     @media (min-width: 768px) {
-      #ea-drawer, #ea-detail { left: 50%; right: auto; width: 600px; transform: translateX(-50%) translateY(100%); }
+      #ea-drawer, #ea-detail { left: 50%; right: auto; width: 600px; transform: translateX(-50%) translateY(calc(100% + 120px)); }
       #ea-drawer.open, #ea-detail.open { transform: translateX(-50%) translateY(0); }
       #ea-panel-left { left: 30px; top: 60px; }
       #ea-panel-right { right: 30px; top: 60px; }
