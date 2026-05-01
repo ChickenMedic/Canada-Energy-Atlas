@@ -2833,7 +2833,7 @@ ecs.registerBehavior((w: any) => {
       const worldCamPos = new T.Vector3()
       cam.getWorldPosition(worldCamPos)
       const distToCam = worldCamPos.distanceTo(mapGroup.position)
-      const panSpeed = 0.0025 * Math.max(distToCam, 0.5)
+      const panSpeed = 0.00175 * Math.max(distToCam, 0.5)
 
       const isWall = ((window as any).currentOrientationMode === 'wall')
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
@@ -2907,6 +2907,7 @@ ecs.registerBehavior((w: any) => {
   let lastTouchY = 0
   let lastAvgX = 0
   let lastAvgY = 0
+  let lastTouchAngle = 0
   let touchCount = 0
 
   window.addEventListener('touchstart', (e: TouchEvent) => {
@@ -2920,6 +2921,7 @@ ecs.registerBehavior((w: any) => {
       touchStartScale = mapGroup.scale.x
       lastAvgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
       lastAvgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+      lastTouchAngle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX)
     } else if (e.touches.length === 1) {
       lastTouchX = e.touches[0].clientX
       lastTouchY = e.touches[0].clientY
@@ -2943,16 +2945,23 @@ ecs.registerBehavior((w: any) => {
       if (lastAvgX > 0 && lastAvgY > 0) {
         const avgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
         const avgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-        const dX = avgX - lastAvgX
-
-        // 2-finger twist to rotate map (yaw only)
-        mapGroup.rotateY(dX * 0.01125)
-
+        
+        // 2-finger true twist rotation
+        const currentAngle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX)
+        let dAngle = currentAngle - lastTouchAngle
+        
+        if (dAngle > Math.PI) dAngle -= 2 * Math.PI
+        if (dAngle < -Math.PI) dAngle += 2 * Math.PI
+        
+        mapGroup.rotateY(-dAngle)
+        
+        lastTouchAngle = currentAngle
         lastAvgX = avgX
         lastAvgY = avgY
       } else {
         lastAvgX = (e.touches[0].clientX + e.touches[1].clientX) / 2
         lastAvgY = (e.touches[0].clientY + e.touches[1].clientY) / 2
+        lastTouchAngle = Math.atan2(e.touches[1].clientY - e.touches[0].clientY, e.touches[1].clientX - e.touches[0].clientX)
       }
 
     } else if (e.touches.length === 1 && touchCount === 1) {
@@ -2973,7 +2982,7 @@ ecs.registerBehavior((w: any) => {
       const worldCamPos = new T.Vector3()
       cam.getWorldPosition(worldCamPos)
       const distToCam = worldCamPos.distanceTo(mapGroup.position)
-      const panSpeed = 0.0025 * Math.max(distToCam, 0.5)
+      const panSpeed = 0.00175 * Math.max(distToCam, 0.5)
 
       const isWall = ((window as any).currentOrientationMode === 'wall')
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
