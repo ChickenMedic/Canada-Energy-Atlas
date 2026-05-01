@@ -2829,14 +2829,19 @@ ecs.registerBehavior((w: any) => {
       const camUp = new T.Vector3(0, 1, 0).applyQuaternion(worldCamQuat)
       const panUp = camUp.projectOnPlane(normal).normalize()
 
-      const panSpeed = 0.0125 * mapGroup.scale.x
+      // Base pan sensitivity on distance to camera, independent of map scale
+      const worldCamPos = new T.Vector3()
+      cam.getWorldPosition(worldCamPos)
+      const distToCam = worldCamPos.distanceTo(mapGroup.position)
+      const panSpeed = 0.0025 * Math.max(distToCam, 0.5)
+
       const isWall = ((window as any).currentOrientationMode === 'wall')
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar((isWall ? -dy : dy) * panSpeed))
 
-      // Clamp distance
+      // Clamp distance proportionally to map scale so it doesn't jump after zooming
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
-      const maxDistance = 2.0 // meters
+      const maxDistance = 8.0 * mapGroup.scale.x
       if (dist > maxDistance) {
         const clampDir = new T.Vector3().subVectors(mapGroup.position, mapGroup.userData.originPos).normalize()
         mapGroup.position.copy(mapGroup.userData.originPos).add(clampDir.multiplyScalar(maxDistance))
@@ -2964,14 +2969,19 @@ ecs.registerBehavior((w: any) => {
       const camUp = new T.Vector3(0, 1, 0).applyQuaternion(worldCamQuat)
       const panUp = camUp.projectOnPlane(normal).normalize()
 
-      const panSpeed = 0.0125 * mapGroup.scale.x
+      // Base pan sensitivity on distance to camera, independent of map scale
+      const worldCamPos = new T.Vector3()
+      cam.getWorldPosition(worldCamPos)
+      const distToCam = worldCamPos.distanceTo(mapGroup.position)
+      const panSpeed = 0.0025 * Math.max(distToCam, 0.5)
+
       const isWall = ((window as any).currentOrientationMode === 'wall')
       mapGroup.position.add(panRight.multiplyScalar(-dx * panSpeed))
       mapGroup.position.add(panUp.multiplyScalar((isWall ? -dy : dy) * panSpeed))
 
-      // Clamp distance
+      // Clamp distance proportionally to map scale so it doesn't jump after zooming
       const dist = mapGroup.position.distanceTo(mapGroup.userData.originPos)
-      const maxDistance = 2.0 // meters
+      const maxDistance = 8.0 * mapGroup.scale.x
       if (dist > maxDistance) {
         const clampDir = new T.Vector3().subVectors(mapGroup.position, mapGroup.userData.originPos).normalize()
         mapGroup.position.copy(mapGroup.userData.originPos).add(clampDir.multiplyScalar(maxDistance))
