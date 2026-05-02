@@ -860,7 +860,10 @@ function buildGridOverlay() {
 
       const curve = new T.CatmullRomCurve3(points)
       const geom = new T.TubeGeometry(curve, Math.max(points.length * 2, 8), 0.003, 6, false)
-      const color = line.voltage >= 500 ? 0xffaa00 : 0x44ddaa
+      let color = 0x44ddaa
+      if (line.voltage >= 450) color = 0xff4444
+      else if (line.voltage >= 300) color = 0xffaa00
+      
       const mat = new T.MeshStandardMaterial({
         color, emissive: new T.Color(color), emissiveIntensity: 0.8,
         transparent: true, opacity: 0.7,
@@ -2053,7 +2056,7 @@ function injectUI() {
   const subLayers: Record<string, boolean> = {
     oilPipelines: true, oilRefineries: false, oilCancelled: false,
     gasPipelines: true, lngTerminals: false,
-    electricalGrid: true, gridNuclear: true, gridHydro: true, gridFossil: true, gridRenewable: true, priceMarkers: false,
+    gridLines450: true, gridLines300: true, gridLines150: true, gridNuclear: true, gridHydro: true, gridFossil: true, gridRenewable: true, priceMarkers: false,
     exportTerminals: true, exportRoutes: false, exportBoats: false,
     provinceLabels: false,
     usRegion: true, mexRegion: false,
@@ -2098,7 +2101,9 @@ function injectUI() {
       ]
     } else if (activeCategory === 'electricity') {
       items = [
-        { key: 'electricalGrid', label: 'Electrical Grid', color: '#ffaa44' },
+        { key: 'gridLines450', label: 'Ultra-High Voltage (450kV+)', color: '#ff4444' },
+        { key: 'gridLines300', label: 'High Voltage (300-449kV)', color: '#ffaa00' },
+        { key: 'gridLines150', label: 'Transmission (150-299kV)', color: '#44ddaa' },
         { key: 'gridNuclear', label: 'Nuclear Nodes', color: '#ffaa00' },
         { key: 'gridHydro', label: 'Hydro Nodes', color: '#4488ff' },
         { key: 'gridFossil', label: 'Coal/Gas Nodes', color: '#ff6644' },
@@ -2171,7 +2176,12 @@ function injectUI() {
         else if (child.userData?.type === 'hydro') child.visible = subLayers.gridHydro
         else if (child.userData?.type === 'coal' || child.userData?.type === 'gas') child.visible = subLayers.gridFossil
         else if (child.userData?.type === 'wind' || child.userData?.type === 'solar' || child.userData?.type === 'biomass') child.visible = subLayers.gridRenewable
-        else if (child.userData?.clickType === 'gridLine') child.visible = subLayers.electricalGrid
+        else if (child.userData?.clickType === 'gridLine') {
+          const v = child.userData.gridData?.voltage || 0;
+          if (v >= 450) child.visible = subLayers.gridLines450
+          else if (v >= 300) child.visible = subLayers.gridLines300
+          else child.visible = subLayers.gridLines150
+        }
       })
     }
     if (priceMarkerGroup) priceMarkerGroup.visible = (activeCategory === 'overview' && subLayers.priceMarkers)
