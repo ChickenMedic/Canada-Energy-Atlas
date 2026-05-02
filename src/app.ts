@@ -2650,6 +2650,7 @@ ecs.registerBehavior((w: any) => {
     // Orient the map so it faces the camera directly (flat)
     mapGroup.quaternion.copy(cam.quaternion)
     mapGroup.rotateX(Math.PI / 2)
+    mapGroup.rotateZ(Math.PI) // Flip to show the front face
 
     mapGroup.userData.originPos = mapGroup.position.clone()
 
@@ -2806,8 +2807,8 @@ ecs.registerBehavior((w: any) => {
     if (isUI(e)) return
     if (!isPlaced) return
     if (e.pointerType === 'touch') return
-    if (e.button === 0) isSpinning = true
-    else if (e.button === 2) isPanning = true
+    if (e.button === 0) isPanning = true
+    else if (e.button === 2) isSpinning = true
     previousX = e.clientX
     previousY = e.clientY
   }
@@ -2853,8 +2854,8 @@ ecs.registerBehavior((w: any) => {
   }
   const upListener = (e: PointerEvent) => {
     if (isUI(e)) return
-    if (e.button === 0) isSpinning = false
-    if (e.button === 2) isPanning = false
+    if (e.button === 0) isPanning = false
+    if (e.button === 2) isSpinning = false
   }
 
   const applyZoomAtScreenPoint = (newScale: number, pointerX: number, pointerY: number) => {
