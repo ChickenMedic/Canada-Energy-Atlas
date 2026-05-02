@@ -2643,12 +2643,13 @@ ecs.registerBehavior((w: any) => {
     if (placeBtn) placeBtn.style.display = 'none'
     const oBtn = document.getElementById('ea-orientation-btn')
     if (oBtn) oBtn.style.display = 'none'
+    ;(window as any).currentOrientationMode = 'wall' // Ensure panning acts like a wall map
 
     const dir = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion)
     mapGroup.position.copy(cam.position).add(dir.multiplyScalar(2.0))
-    mapGroup.position.y -= 0.7
-    mapGroup.lookAt(cam.position.x, mapGroup.position.y, cam.position.z)
-    mapGroup.rotateY(Math.PI)
+    // Orient the map so it faces the camera directly (flat)
+    mapGroup.quaternion.copy(cam.quaternion)
+    mapGroup.rotateX(Math.PI / 2)
 
     mapGroup.userData.originPos = mapGroup.position.clone()
 
