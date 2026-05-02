@@ -15,6 +15,7 @@ import {
   ExportTerminal, RefineryFacility, ExportRoute,
 } from './services/api'
 import { BASINS, BasinData } from './data/basins-geo'
+import gridLinesData from './data/canada_grid.json'
 
 // ── Globals ──
 let world: any = null
@@ -845,27 +846,24 @@ function buildGridOverlay() {
     'BC Interconnect': [49.50, -121.00],
   }
 
-  for (const line of lines) {
+  for (const line of gridLinesData) {
     try {
-      const fromNode = nodes.find(n => n.name === line.from)
-      const toNode = nodes.find(n => n.name === line.to)
-      const fromPos = fromNode ? [fromNode.lat, fromNode.lng] : interconnects[line.from]
-      const toPos = toNode ? [toNode.lat, toNode.lng] : interconnects[line.to]
-      if (!fromPos || !toPos) continue
-      const [x1, z1] = geoToWorld(fromPos[0], fromPos[1])
-      const [x2, z2] = geoToWorld(toPos[0], toPos[1])
-      const p1 = new T.Vector3(x1, 0.13, z1)
-      const p2 = new T.Vector3(x2, 0.13, z2)
-      const mid = new T.Vector3().addVectors(p1, p2).multiplyScalar(0.5)
-      mid.y += p1.distanceTo(p2) * 0.15
-      const curve = new T.QuadraticBezierCurve3(p1, mid, p2)
-      const geom = new T.TubeGeometry(curve, 16, 0.004, 6, false)
-      const color = line.voltage_kv > 500 ? 0xffbb44 : 0x44ddaa
-      const mat = new T.MeshStandardMaterial({
-        color, emissive: new T.Color(color), emissiveIntensity: 0.7,
-        transparent: true, opacity: 0.4 + Math.min(line.voltage_kv / 735, 1.0) * 0.5,
+      const points = line.route.map(([lat, lng]: [number, number]) => {
+        const [x, z] = geoToWorld(lat, lng)
+        return new T.Vector3(x, 0.07, z) // sit just above map surface
       })
-      gridGroup.add(new T.Mesh(geom, mat))
+      if (points.length < 2) continue
+
+      const curve = new T.CatmullRomCurve3(points)
+      const geom = new T.TubeGeometry(curve, Math.max(points.length * 2, 8), 0.003, 6, false)
+      const color = line.voltage >= 500 ? 0xffaa00 : 0x44ddaa
+      const mat = new T.MeshStandardMaterial({
+        color, emissive: new T.Color(color), emissiveIntensity: 0.8,
+        transparent: true, opacity: 0.7,
+      })
+      const mesh = new T.Mesh(geom, mat)
+      mesh.userData = { clickType: 'gridLine', gridData: line }
+      gridGroup.add(mesh)
     } catch (e) { }
   }
   mapGroup.add(gridGroup)
@@ -1342,6 +1340,8 @@ function handleObjectClick(obj: any, hitPt?: any) {
     showPriceDetail(data.priceData, data.marker)
   } else if (data.clickType === 'region' && data.region) {
     showRegionDetail(data.region)
+  } else if (data.clickType === 'gridLine' && data.gridData) {
+    showGridDetail(data.gridData)
   }
 }
 
@@ -1627,6 +1627,32 @@ function showRegionDetail(regionName: string) {
   panel.querySelector('#detail-close')?.addEventListener('click', closeDetailPanel)
   setTimeout(() => panel.classList.add('open'), 10)
 }
+
+function showGridDetail(gridData: any) {
+  const panel = ensureDetailPanel()
+  
+  panel.innerHTML = `
+    <div class="detail-hdr">
+      <div>
+        <div class="detail-name">\${gridData.name}</div>
+        <div class="detail-sub">\${gridData.voltage} kV \${gridData.type} Transmission</div>
+      </div>
+      <button class="drawer-close" id="detail-close">&times;</button>
+    </div>
+    <div class="detail-body">
+      <div style="font-size:12px;color:#d0d8e0;line-height:1.5;margin-bottom:8px;">
+        Major high-voltage transmission infrastructure component. The North American power grid relies on these high-voltage trunks to transmit bulk power over long distances.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div class="spec-item"><span class="spec-lbl">Voltage</span><span class="spec-val">\${gridData.voltage} kV</span></div>
+        <div class="spec-item"><span class="spec-lbl">Type</span><span class="spec-val">\${gridData.type}</span></div>
+      </div>
+    </div>`
+
+  panel.querySelector('#detail-close')?.addEventListener('click', closeDetailPanel)
+  setTimeout(() => panel.classList.add('open'), 10)
+}
+
 
 function showExportTerminalDetail(terminal: ExportTerminal) {
   const panel = ensureDetailPanel()
