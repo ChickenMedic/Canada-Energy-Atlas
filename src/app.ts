@@ -2161,13 +2161,14 @@ function injectUI() {
       cancelledPipelineGroup.visible = (activeCategory === 'oil' && subLayers.oilCancelled)
     }
     if (gridGroup) {
-      gridGroup.visible = (activeCategory === 'electricity' && subLayers.electricalGrid)
-      // Toggle node visibility inside the gridGroup
+      gridGroup.visible = (activeCategory === 'electricity')
+      // Toggle node and line visibility inside the gridGroup
       gridGroup.children.forEach((child: any) => {
         if (child.userData?.type === 'nuclear') child.visible = subLayers.gridNuclear
         else if (child.userData?.type === 'hydro') child.visible = subLayers.gridHydro
         else if (child.userData?.type === 'coal' || child.userData?.type === 'gas') child.visible = subLayers.gridFossil
         else if (child.userData?.type === 'wind' || child.userData?.type === 'solar' || child.userData?.type === 'biomass') child.visible = subLayers.gridRenewable
+        else if (child.userData?.clickType === 'gridLine') child.visible = subLayers.electricalGrid
       })
     }
     if (priceMarkerGroup) priceMarkerGroup.visible = (activeCategory === 'overview' && subLayers.priceMarkers)
