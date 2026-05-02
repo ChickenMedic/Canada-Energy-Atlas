@@ -2106,7 +2106,7 @@ function injectUI() {
         { key: 'gridNuclear', label: 'Nuclear Plants', color: '#ffaa00' },
         { key: 'gridHydro', label: 'Hydro Dams', color: '#4488ff' },
         { key: 'gridFossil', label: 'Coal/Gas Plants', color: '#ff6644' },
-        { key: 'gridRenewable', label: 'Wind/Solar Arrays', color: '#44ddaa' },
+        { key: 'gridRenewable', label: 'Wind and Solar', color: '#44ddaa' },
       ]
       infoTabs = [
         { id: 'history', label: 'Historical Data' },

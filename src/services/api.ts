@@ -673,27 +673,56 @@ export interface TransmissionLine {
 export function getElectricalGridData(): { nodes: GridNode[], lines: TransmissionLine[] } {
   return {
     nodes: [
-      // Major generation facilities
-      { name: 'Churchill Falls', province: 'NL', lat: 53.54, lng: -64.10, type: 'hydro', capacity_mw: 5428 },
+      // === HYDRO ===
+      { name: 'Churchill Falls', province: 'NL', lat: 53.53, lng: -64.31, type: 'hydro', capacity_mw: 5428 },
+      { name: 'Muskrat Falls', province: 'NL', lat: 53.24, lng: -60.77, type: 'hydro', capacity_mw: 824 },
       { name: 'Robert-Bourassa', province: 'QC', lat: 53.78, lng: -77.45, type: 'hydro', capacity_mw: 5616 },
-      { name: 'La Grande-4', province: 'QC', lat: 53.76, lng: -73.67, type: 'hydro', capacity_mw: 2779 },
-      { name: 'Manic-5', province: 'QC', lat: 51.04, lng: -68.73, type: 'hydro', capacity_mw: 2660 },
-      { name: 'Bruce Nuclear', province: 'ON', lat: 44.33, lng: -81.60, type: 'nuclear', capacity_mw: 6232 },
+      { name: 'La Grande-4', province: 'QC', lat: 53.88, lng: -73.45, type: 'hydro', capacity_mw: 2779 },
+      { name: 'La Grande-3', province: 'QC', lat: 53.72, lng: -75.98, type: 'hydro', capacity_mw: 2418 },
+      { name: 'Manic-5', province: 'QC', lat: 50.64, lng: -68.73, type: 'hydro', capacity_mw: 2660 },
+      { name: 'Beauharnois', province: 'QC', lat: 45.31, lng: -73.91, type: 'hydro', capacity_mw: 1903 },
+      { name: 'Niagara Falls (Beck)', province: 'ON', lat: 43.14, lng: -79.04, type: 'hydro', capacity_mw: 2238 },
+      { name: 'R.H. Saunders', province: 'ON', lat: 45.00, lng: -74.79, type: 'hydro', capacity_mw: 1045 },
+      { name: 'Des Joachims', province: 'ON', lat: 46.18, lng: -77.69, type: 'hydro', capacity_mw: 429 },
+      { name: 'Limestone', province: 'MB', lat: 56.51, lng: -94.12, type: 'hydro', capacity_mw: 1340 },
+      { name: 'Kettle', province: 'MB', lat: 56.38, lng: -94.61, type: 'hydro', capacity_mw: 1220 },
+      { name: 'Long Spruce', province: 'MB', lat: 56.40, lng: -94.34, type: 'hydro', capacity_mw: 1010 },
+      { name: 'E.B. Campbell', province: 'SK', lat: 53.68, lng: -103.32, type: 'hydro', capacity_mw: 289 },
+      { name: 'Brazeau', province: 'AB', lat: 52.96, lng: -115.58, type: 'hydro', capacity_mw: 355 },
+      { name: 'WAC Bennett (GM Shrum)', province: 'BC', lat: 56.01, lng: -122.19, type: 'hydro', capacity_mw: 2730 },
+      { name: 'Mica Dam', province: 'BC', lat: 52.08, lng: -118.56, type: 'hydro', capacity_mw: 2805 },
+      { name: 'Revelstoke Dam', province: 'BC', lat: 51.05, lng: -118.18, type: 'hydro', capacity_mw: 2480 },
+      { name: 'Kemano', province: 'BC', lat: 53.56, lng: -127.94, type: 'hydro', capacity_mw: 896 },
+      
+      // === NUCLEAR ===
+      { name: 'Bruce Nuclear', province: 'ON', lat: 44.33, lng: -81.60, type: 'nuclear', capacity_mw: 6400 },
       { name: 'Darlington Nuclear', province: 'ON', lat: 43.87, lng: -78.72, type: 'nuclear', capacity_mw: 3512 },
       { name: 'Pickering Nuclear', province: 'ON', lat: 43.81, lng: -79.07, type: 'nuclear', capacity_mw: 3094 },
-      { name: 'Niagara Falls (Beck)', province: 'ON', lat: 43.11, lng: -79.06, type: 'hydro', capacity_mw: 2038 },
-      { name: 'Sundance', province: 'AB', lat: 53.53, lng: -114.56, type: 'coal', capacity_mw: 2141 },
-      { name: 'Genesee', province: 'AB', lat: 53.32, lng: -114.23, type: 'gas', capacity_mw: 1400 },
-      { name: 'Shepard Energy Centre', province: 'AB', lat: 50.98, lng: -113.90, type: 'gas', capacity_mw: 800 },
-      { name: 'WAC Bennett Dam', province: 'BC', lat: 56.02, lng: -122.20, type: 'hydro', capacity_mw: 2730 },
-      { name: 'Revelstoke Dam', province: 'BC', lat: 51.05, lng: -118.18, type: 'hydro', capacity_mw: 2480 },
-      { name: 'Mica Dam', province: 'BC', lat: 52.08, lng: -118.56, type: 'hydro', capacity_mw: 2805 },
-      { name: 'Site C Dam', province: 'BC', lat: 56.17, lng: -121.70, type: 'hydro', capacity_mw: 1100 },
       { name: 'Point Lepreau Nuclear', province: 'NB', lat: 45.07, lng: -66.45, type: 'nuclear', capacity_mw: 660 },
-      { name: 'Boundary Dam', province: 'SK', lat: 49.07, lng: -103.00, type: 'coal', capacity_mw: 813 },
-      { name: 'SaskPower Chinook', province: 'SK', lat: 50.56, lng: -108.49, type: 'wind', capacity_mw: 350 },
-      { name: 'Riviere-du-Moulin Wind', province: 'QC', lat: 48.40, lng: -70.70, type: 'wind', capacity_mw: 350 },
+      
+      // === COAL ===
+      { name: 'Boundary Dam', province: 'SK', lat: 49.08, lng: -103.03, type: 'coal', capacity_mw: 813 },
+      { name: 'Poplar River', province: 'SK', lat: 49.05, lng: -105.48, type: 'coal', capacity_mw: 582 },
+      { name: 'Shand', province: 'SK', lat: 49.09, lng: -102.86, type: 'coal', capacity_mw: 276 },
+      { name: 'Belledune', province: 'NB', lat: 47.91, lng: -65.84, type: 'coal', capacity_mw: 458 },
+      { name: 'Lingan', province: 'NS', lat: 46.24, lng: -60.03, type: 'coal', capacity_mw: 620 },
+      { name: 'Trenton', province: 'NS', lat: 45.62, lng: -62.64, type: 'coal', capacity_mw: 300 },
+      
+      // === GAS / OIL ===
+      { name: 'Shepard Energy Centre', province: 'AB', lat: 50.98, lng: -113.90, type: 'gas', capacity_mw: 860 },
+      { name: 'Genesee', province: 'AB', lat: 53.34, lng: -114.30, type: 'gas', capacity_mw: 1400 }, // converted/converting
+      { name: 'Keephills', province: 'AB', lat: 53.45, lng: -114.45, type: 'gas', capacity_mw: 878 },
+      { name: 'Lennox', province: 'ON', lat: 44.14, lng: -76.84, type: 'gas', capacity_mw: 2100 },
+      { name: 'Greenfield', province: 'ON', lat: 42.80, lng: -82.46, type: 'gas', capacity_mw: 1005 },
+      { name: 'Goreway', province: 'ON', lat: 43.74, lng: -79.67, type: 'gas', capacity_mw: 875 },
+      
+      // === RENEWABLES ===
+      { name: 'Travers Solar', province: 'AB', lat: 50.21, lng: -112.87, type: 'solar', capacity_mw: 465 },
       { name: 'Blackspring Ridge Wind', province: 'AB', lat: 49.95, lng: -113.30, type: 'wind', capacity_mw: 300 },
+      { name: 'SaskPower Chinook', province: 'SK', lat: 50.56, lng: -108.49, type: 'wind', capacity_mw: 350 },
+      { name: 'Henvey Inlet Wind', province: 'ON', lat: 45.89, lng: -80.60, type: 'wind', capacity_mw: 300 },
+      { name: 'Seigneurie de Beaupré', province: 'QC', lat: 47.38, lng: -70.85, type: 'wind', capacity_mw: 365 },
+      { name: 'Rivière-du-Moulin', province: 'QC', lat: 48.40, lng: -70.70, type: 'wind', capacity_mw: 350 },
     ],
     lines: [
       { from: 'Robert-Bourassa', to: 'Montreal (HQ)', voltage_kv: 735, capacity_mw: 5000 },
