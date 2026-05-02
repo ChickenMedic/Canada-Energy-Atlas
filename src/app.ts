@@ -833,6 +833,7 @@ function buildGridOverlay() {
         const lbl = makeLabel([node.name, `${(node.capacity_mw / 1000).toFixed(1)} GW ${node.type}`], { fontSize: 64, width: 800, height: 300 })
         lbl.position.set(x, 0.28, z)
         lbl.scale.set(0.70, 0.26, 1)
+        lbl.userData = { type: node.type }
         gridGroup.add(lbl)
       }
     } catch (e) { }
@@ -2049,7 +2050,7 @@ function injectUI() {
   const subLayers: Record<string, boolean> = {
     oilPipelines: true, oilRefineries: false, oilCancelled: false,
     gasPipelines: true, lngTerminals: false,
-    electricalGrid: true, priceMarkers: false,
+    electricalGrid: true, gridNuclear: true, gridHydro: true, gridFossil: true, gridRenewable: true, priceMarkers: false,
     exportTerminals: true, exportRoutes: false, exportBoats: false,
     provinceLabels: false,
     usRegion: true, mexRegion: false,
@@ -2095,6 +2096,10 @@ function injectUI() {
     } else if (activeCategory === 'electricity') {
       items = [
         { key: 'electricalGrid', label: 'Electrical Grid', color: '#ffaa44' },
+        { key: 'gridNuclear', label: 'Nuclear Nodes', color: '#ffaa00' },
+        { key: 'gridHydro', label: 'Hydro Nodes', color: '#4488ff' },
+        { key: 'gridFossil', label: 'Coal/Gas Nodes', color: '#ff6644' },
+        { key: 'gridRenewable', label: 'Wind/Solar', color: '#44ddaa' },
       ]
       infoTabs = [
         { id: 'history', label: 'Historical Data' },
@@ -2155,7 +2160,16 @@ function injectUI() {
     if (cancelledPipelineGroup) {
       cancelledPipelineGroup.visible = (activeCategory === 'oil' && subLayers.oilCancelled)
     }
-    if (gridGroup) gridGroup.visible = (activeCategory === 'electricity' && subLayers.electricalGrid)
+    if (gridGroup) {
+      gridGroup.visible = (activeCategory === 'electricity' && subLayers.electricalGrid)
+      // Toggle node visibility inside the gridGroup
+      gridGroup.children.forEach((child: any) => {
+        if (child.userData?.type === 'nuclear') child.visible = subLayers.gridNuclear
+        else if (child.userData?.type === 'hydro') child.visible = subLayers.gridHydro
+        else if (child.userData?.type === 'coal' || child.userData?.type === 'gas') child.visible = subLayers.gridFossil
+        else if (child.userData?.type === 'wind' || child.userData?.type === 'solar' || child.userData?.type === 'biomass') child.visible = subLayers.gridRenewable
+      })
+    }
     if (priceMarkerGroup) priceMarkerGroup.visible = (activeCategory === 'overview' && subLayers.priceMarkers)
     // Province names always show in overview mode; optional in other modes
     if (labelGroup) labelGroup.visible = (activeCategory === 'overview')
