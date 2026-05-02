@@ -848,6 +848,7 @@ function buildGridOverlay() {
   }
 
   for (const line of gridLinesData) {
+    if (line.voltage < 450) continue; // PERFORMANCE: Only render 450kV+ in AR
     try {
       const points = line.route.map(([lat, lng]: [number, number]) => {
         const [x, z] = geoToWorld(lat, lng)
@@ -2056,7 +2057,7 @@ function injectUI() {
   const subLayers: Record<string, boolean> = {
     oilPipelines: true, oilRefineries: false, oilCancelled: false,
     gasPipelines: true, lngTerminals: false,
-    gridLines450: true, gridLines300: true, gridLines150: true, gridNuclear: false, gridHydro: false, gridFossil: false, gridRenewable: false, priceMarkers: false,
+    gridLines450: true, gridNuclear: false, gridHydro: false, gridFossil: false, gridRenewable: false, priceMarkers: false,
     exportTerminals: true, exportRoutes: false, exportBoats: false,
     provinceLabels: false,
     usRegion: true, mexRegion: false,
@@ -2102,8 +2103,6 @@ function injectUI() {
     } else if (activeCategory === 'electricity') {
       items = [
         { key: 'gridLines450', label: 'Ultra-High Voltage (450kV+)', color: '#ffdd00' },
-        { key: 'gridLines300', label: 'High Voltage (300-449kV)', color: '#00ffcc' },
-        { key: 'gridLines150', label: 'Transmission (150-299kV)', color: '#ff00aa' },
         { key: 'gridNuclear', label: 'Nuclear Plants', color: '#ffaa00' },
         { key: 'gridHydro', label: 'Hydro Dams', color: '#4488ff' },
         { key: 'gridFossil', label: 'Coal/Gas Plants', color: '#ff6644' },
@@ -2177,10 +2176,7 @@ function injectUI() {
         else if (child.userData?.type === 'coal' || child.userData?.type === 'gas') child.visible = subLayers.gridFossil
         else if (child.userData?.type === 'wind' || child.userData?.type === 'solar' || child.userData?.type === 'biomass') child.visible = subLayers.gridRenewable
         else if (child.userData?.clickType === 'gridLine') {
-          const v = child.userData.gridData?.voltage || 0;
-          if (v >= 450) child.visible = subLayers.gridLines450
-          else if (v >= 300) child.visible = subLayers.gridLines300
-          else child.visible = subLayers.gridLines150
+          child.visible = subLayers.gridLines450
         }
       })
     }
