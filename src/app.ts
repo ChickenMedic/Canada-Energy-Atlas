@@ -851,7 +851,10 @@ function buildGridOverlay() {
     try {
       const points = line.route.map(([lat, lng]: [number, number]) => {
         const [x, z] = geoToWorld(lat, lng)
-        return new T.Vector3(x, 0.07, z) // sit just above map surface
+        // Canada map sits at Y=0.05, US sits at Y=0.015
+        const isCanada = lat >= 49 || (lat >= 45 && lng >= -75 && lng <= -55) || (lat >= 41.5 && lng >= -85 && lng <= -75);
+        const yHeight = isCanada ? 0.052 : 0.017;
+        return new T.Vector3(x, yHeight, z)
       })
       if (points.length < 2) continue
 

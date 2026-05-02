@@ -52,16 +52,16 @@ async function run() {
       
       for (const line of coordsRaw) {
         // Broad bounding box for Canada and northern US
-        let inCanada = false;
+        let inNorthAmerica = false;
         for (const pt of line) {
-          // Look for anything roughly north of latitude 43
-          if (pt[1] > 43 && pt[1] < 85 && pt[0] > -145 && pt[0] < -50) {
-            inCanada = true;
+          // Look for anything roughly in North America
+          if (pt[1] > 20 && pt[1] < 85 && pt[0] > -145 && pt[0] < -50) {
+            inNorthAmerica = true;
             break;
           }
         }
         
-        if (!inCanada) continue;
+        if (!inNorthAmerica) continue;
 
         const simplified = [];
         for (let i = 0; i < line.length; i++) {
