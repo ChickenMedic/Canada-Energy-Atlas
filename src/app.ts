@@ -860,13 +860,13 @@ function buildGridOverlay() {
 
       const curve = new T.CatmullRomCurve3(points)
       const geom = new T.TubeGeometry(curve, Math.max(points.length * 2, 8), 0.003, 6, false)
-      let color = 0x44ddaa
-      if (line.voltage >= 450) color = 0xff4444
-      else if (line.voltage >= 300) color = 0xffaa00
+      let color = 0xff00aa
+      if (line.voltage >= 450) color = 0xffdd00
+      else if (line.voltage >= 300) color = 0x00ffcc
       
-      const mat = new T.MeshStandardMaterial({
-        color, emissive: new T.Color(color), emissiveIntensity: 0.8,
-        transparent: true, opacity: 0.7,
+      const mat = new T.MeshBasicMaterial({
+        color,
+        transparent: true, opacity: 0.9,
       })
       const mesh = new T.Mesh(geom, mat)
       mesh.userData = { clickType: 'gridLine', gridData: line }
@@ -2056,7 +2056,7 @@ function injectUI() {
   const subLayers: Record<string, boolean> = {
     oilPipelines: true, oilRefineries: false, oilCancelled: false,
     gasPipelines: true, lngTerminals: false,
-    gridLines450: true, gridLines300: true, gridLines150: true, gridNuclear: true, gridHydro: true, gridFossil: true, gridRenewable: true, priceMarkers: false,
+    gridLines450: true, gridLines300: true, gridLines150: true, gridNuclear: false, gridHydro: false, gridFossil: false, gridRenewable: false, priceMarkers: false,
     exportTerminals: true, exportRoutes: false, exportBoats: false,
     provinceLabels: false,
     usRegion: true, mexRegion: false,
@@ -2101,13 +2101,13 @@ function injectUI() {
       ]
     } else if (activeCategory === 'electricity') {
       items = [
-        { key: 'gridLines450', label: 'Ultra-High Voltage (450kV+)', color: '#ff4444' },
-        { key: 'gridLines300', label: 'High Voltage (300-449kV)', color: '#ffaa00' },
-        { key: 'gridLines150', label: 'Transmission (150-299kV)', color: '#44ddaa' },
-        { key: 'gridNuclear', label: 'Nuclear Nodes', color: '#ffaa00' },
-        { key: 'gridHydro', label: 'Hydro Nodes', color: '#4488ff' },
-        { key: 'gridFossil', label: 'Coal/Gas Nodes', color: '#ff6644' },
-        { key: 'gridRenewable', label: 'Wind/Solar', color: '#44ddaa' },
+        { key: 'gridLines450', label: 'Ultra-High Voltage (450kV+)', color: '#ffdd00' },
+        { key: 'gridLines300', label: 'High Voltage (300-449kV)', color: '#00ffcc' },
+        { key: 'gridLines150', label: 'Transmission (150-299kV)', color: '#ff00aa' },
+        { key: 'gridNuclear', label: 'Nuclear Plants', color: '#ffaa00' },
+        { key: 'gridHydro', label: 'Hydro Dams', color: '#4488ff' },
+        { key: 'gridFossil', label: 'Coal/Gas Plants', color: '#ff6644' },
+        { key: 'gridRenewable', label: 'Wind/Solar Arrays', color: '#44ddaa' },
       ]
       infoTabs = [
         { id: 'history', label: 'Historical Data' },
