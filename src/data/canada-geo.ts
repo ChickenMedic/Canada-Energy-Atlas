@@ -23,18 +23,19 @@ const CENTER_LNG = -96
 const SCALE = 0.06  // degrees to world units
 
 export function geoToWorld(lat: number, lng: number): [number, number] {
-  // Web Mercator approximation (standard Google Maps style layout)
-  // Longitude maps linearly in Mercator
-  const x = (lng - CENTER_LNG) * SCALE
+  // Compress extreme northern latitudes to prevent massive islands (Nunavut/NWT)
+  let adjustedLat = lat;
+  if (adjustedLat > 60) {
+    adjustedLat = 60 + (adjustedLat - 60) * 0.5;
+  }
   
-  // Latitude uses the classic log-tangent conformal Mercator stretch
-  const latRad = lat * Math.PI / 180
+  const x = (lng - CENTER_LNG) * SCALE
+  const latRad = adjustedLat * Math.PI / 180
   const mercN = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)))
   
   const centerLatRad = CENTER_LAT * Math.PI / 180
   const centerMercN = Math.log(Math.tan((Math.PI / 4) + (centerLatRad / 2)))
   
-  // Scale the mercator value appropriately to match our longitude degree-based scale
   const z = -(mercN - centerMercN) * (180 / Math.PI) * SCALE
   
   return [x, z]
@@ -48,7 +49,12 @@ export function worldToGeo(x: number, z: number): [number, number] {
   
   const mercN = centerMercN - z / ((180 / Math.PI) * SCALE)
   const latRad = 2 * (Math.atan(Math.exp(mercN)) - Math.PI / 4)
-  const lat = latRad * 180 / Math.PI
+  let lat = latRad * 180 / Math.PI
+  
+  // Reverse compression for interactions to work properly
+  if (lat > 60) {
+    lat = 60 + (lat - 60) * 2;
+  }
   
   return [lat, lng]
 }

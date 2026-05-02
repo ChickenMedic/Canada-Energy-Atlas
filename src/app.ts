@@ -1144,7 +1144,7 @@ function buildExportsLayer() {
   for (const imp of imports) { buildRouteArrow(imp, true) }
 
   exportGroup.add(routeSubGroup)
-  exportGroup.add(boatSubGroup)
+  // exportGroup.add(boatSubGroup) // Removed per user request
 
   // Resolve label overlaps within each sub-group
   resolveOverlapsInGroup(terminalSubGroup)
@@ -2045,6 +2045,16 @@ function injectUI() {
       btn.onclick = () => { activeCategory = cat.id; renderLeftPanel(); renderRightPanel(); applyCategory() }
       leftPanel.appendChild(btn)
     }
+
+    const sep = document.createElement('div')
+    sep.style.cssText = 'height:1px;background:rgba(100,150,220,0.2);margin:4px 0;'
+    leftPanel.appendChild(sep)
+
+    const srcBtn = document.createElement('button')
+    srcBtn.className = `layer-btn ${activeDrawer === 'sources' ? 'active' : 'inactive'}`
+    srcBtn.innerHTML = `<span class="layer-dot" style="background:#667788;"></span>Data Sources`
+    srcBtn.onclick = () => { closeDetailPanel(); openDrawer('sources'); renderLeftPanel() }
+    leftPanel.appendChild(srcBtn)
   }
   renderLeftPanel()
   document.body.appendChild(leftPanel)
@@ -2058,7 +2068,7 @@ function injectUI() {
     oilPipelines: true, oilRefineries: false, oilCancelled: false,
     gasPipelines: true, lngTerminals: false,
     gridLines450: true, gridNuclear: false, gridHydro: false, gridFossil: false, gridRenewable: false, priceMarkers: false,
-    exportTerminals: true, exportRoutes: false, exportBoats: false,
+    exportTerminals: true, exportRoutes: false,
     provinceLabels: false,
     usRegion: true, mexRegion: false,
     basins: false,
@@ -2078,7 +2088,6 @@ function injectUI() {
       ]
       infoTabs = [
         { id: 'history', label: 'Historical Data' },
-        { id: 'sources', label: 'Data Sources' },
       ]
     } else if (activeCategory === 'oil') {
       items = [
@@ -2097,9 +2106,7 @@ function injectUI() {
         { key: 'lngTerminals', label: 'LNG Terminals', color: '#00ffcc' },
         { key: 'basins', label: 'Sedimentary Basins', color: '#8b5a2b' },
       ]
-      infoTabs = [
-        { id: 'sources', label: 'Data Sources' },
-      ]
+      infoTabs = []
     } else if (activeCategory === 'electricity') {
       items = [
         { key: 'gridLines450', label: 'Ultra-High Voltage (450kV+)', color: '#ffdd00' },
@@ -2115,11 +2122,8 @@ function injectUI() {
       items = [
         { key: 'exportTerminals', label: 'Export Terminals', color: '#00ffcc' },
         { key: 'exportRoutes', label: 'Shipping Routes', color: '#44aaff' },
-        { key: 'exportBoats', label: 'Active Vessels', color: '#dddddd' },
       ]
-      infoTabs = [
-        { id: 'sources', label: 'Data Sources' },
-      ]
+      infoTabs = []
     }
 
     // Sub-layer toggle buttons
@@ -2204,7 +2208,6 @@ function injectUI() {
           child.visible = (showExports && subLayers.exportTerminals) || showRefFromOil
         }
         if (child.name === 'ExportRoutes') child.visible = (showExports && subLayers.exportRoutes)
-        if (child.name === 'ExportBoats') child.visible = (showExports && subLayers.exportBoats)
       })
     }
 
