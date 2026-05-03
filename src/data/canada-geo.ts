@@ -24,9 +24,10 @@ const SCALE = 0.06  // degrees to world units
 
 export function geoToWorld(lat: number, lng: number): [number, number] {
   // Compress extreme northern latitudes to prevent massive islands (Nunavut/NWT)
+  // User requested a lighter ~30% strength squish (so keeping 70% of the size)
   let adjustedLat = lat;
   if (adjustedLat > 60) {
-    adjustedLat = 60 + (adjustedLat - 60) * 0.5;
+    adjustedLat = 60 + (adjustedLat - 60) * 0.7;
   }
   
   const x = (lng - CENTER_LNG) * SCALE
@@ -53,7 +54,7 @@ export function worldToGeo(x: number, z: number): [number, number] {
   
   // Reverse compression for interactions to work properly
   if (lat > 60) {
-    lat = 60 + (lat - 60) * 2;
+    lat = 60 + (lat - 60) * (1 / 0.7);
   }
   
   return [lat, lng]
