@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "npm run build:grid",
     "build": "node ./node_modules/webpack/bin/webpack.js --config config/webpack.config.js",
     "build:grid": "node ./scripts/build_grid_hv.js",
     "serve": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --mode=development --config config/webpack.config.js"
