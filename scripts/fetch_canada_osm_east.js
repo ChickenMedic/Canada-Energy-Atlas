@@ -9,6 +9,7 @@ async function run() {
   ];
 
   let allWays = [];
+  const failed = [];
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -36,6 +37,13 @@ async function run() {
       });
       
       const text = await response.text();
+      if (!response.ok) {
+        // Overpass answers overload with a 429/504 HTML page, not JSON.
+        failed.push(bbox);
+        console.error(`BBOX ${bbox}: HTTP ${response.status} ${response.statusText}\n${text.substring(0, 200)}`);
+        await sleep(3000);
+        continue;
+      }
       try {
         const json = JSON.parse(text);
         if (json.elements) {
@@ -43,14 +51,25 @@ async function run() {
           console.log(`BBOX ${bbox}: Fetched ${json.elements.length} elements.`);
         }
       } catch(e) {
+        failed.push(bbox);
         console.error(`BBOX ${bbox} returned non-JSON: `, text.substring(0, 200));
       }
     } catch(err) {
+      failed.push(bbox);
       console.error(`Fetch failed for BBOX ${bbox}:`, err);
     }
-    
+
     // rate limit bypass
     await sleep(3000);
+  }
+
+  // Writing a partial result would silently leave holes in the grid that are
+  // invisible once it reaches the map. Bail out and let the run be retried.
+  if (failed.length > 0) {
+    console.error(`\n${failed.length}/${bboxes.length} bbox(es) failed: ${failed.join(' | ')}`);
+    console.error('Refusing to overwrite osm_canada.json with a partial result.');
+    process.exitCode = 1;
+    return;
   }
 
   // Load previously fetched west and central ways

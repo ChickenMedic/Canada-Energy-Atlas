@@ -15,7 +15,9 @@ import {
   ExportTerminal, RefineryFacility, ExportRoute,
 } from './services/api'
 import { BASINS, BasinData } from './data/basins-geo'
-import gridLinesData from './data/canada_grid.json'
+// High-voltage subset only — regenerate with `npm run build:grid` after
+// src/data/canada_grid.json changes. The full 33 MB dump is never bundled.
+import gridLinesData from './data/canada_grid_hv.json'
 
 // ── Globals ──
 let world: any = null
@@ -24,6 +26,7 @@ let oilPipelineGroup: any = null
 let gasPipelineGroup: any = null
 let cancelledPipelineGroup: any = null
 let gridGroup: any = null
+let gridLineGroup: any = null
 let priceMarkerGroup: any = null
 let labelGroup: any = null
 let exportGroup: any = null
@@ -811,7 +814,7 @@ const NODE_COLORS: Record<string, number> = {
 
 function buildGridOverlay() {
   if (!T || !mapGroup) return
-  const { nodes, lines } = getElectricalGridData()
+  const { nodes } = getElectricalGridData()
   gridGroup = new T.Group()
   gridGroup.name = 'ElectricalGrid'
   gridGroup.visible = layerState.grid
@@ -839,16 +842,20 @@ function buildGridOverlay() {
     } catch (e) { }
   }
 
-  const interconnects: Record<string, [number, number]> = {
-    'Montreal (HQ)': [45.50, -73.57], 'Quebec Interconnect': [46.80, -71.20],
-    'Toronto (IESO)': [43.65, -79.38], 'Ontario Interconnect': [46.50, -80.00],
-    'Vancouver (BC Hydro)': [49.28, -123.12], 'Manitoba Interconnect': [50.00, -97.00],
-    'Saskatchewan Interconnect': [50.50, -105.00], 'Alberta Interconnect': [51.00, -114.00],
-    'BC Interconnect': [49.50, -121.00],
-  }
+  mapGroup.add(gridGroup)
+}
+
+// The ~1800 transmission tubes are the single most expensive thing in the scene,
+// and the grid layer starts hidden — so defer them until it is first shown.
+function buildGridLines() {
+  if (!T || !gridGroup || gridLineGroup) return
+  gridLineGroup = new T.Group()
+  gridLineGroup.name = 'TransmissionLines'
+
+  // Every bundled line is >=450kV, so one shared material covers them all.
+  const lineMat = new T.MeshBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0.9 })
 
   for (const line of gridLinesData) {
-    if (line.voltage < 450) continue; // PERFORMANCE: Only render 450kV+ in AR
     try {
       const points = line.route.map(([lat, lng]: [number, number]) => {
         const [x, z] = geoToWorld(lat, lng)
@@ -861,20 +868,12 @@ function buildGridOverlay() {
 
       const curve = new T.CatmullRomCurve3(points)
       const geom = new T.TubeGeometry(curve, Math.max(points.length * 2, 8), 0.003, 6, false)
-      let color = 0xff00aa
-      if (line.voltage >= 450) color = 0xffdd00
-      else if (line.voltage >= 300) color = 0x00ffcc
-      
-      const mat = new T.MeshBasicMaterial({
-        color,
-        transparent: true, opacity: 0.9,
-      })
-      const mesh = new T.Mesh(geom, mat)
+      const mesh = new T.Mesh(geom, lineMat)
       mesh.userData = { clickType: 'gridLine', gridData: line }
-      gridGroup.add(mesh)
+      gridLineGroup.add(mesh)
     } catch (e) { }
   }
-  mapGroup.add(gridGroup)
+  gridGroup.add(gridLineGroup)
 }
 
   // Removing Alberta pipelines per user request
@@ -1424,8 +1423,15 @@ function zoomToPipeline(pipeline: any, hitPt?: any) {
 
 let detailPanel: HTMLElement | null = null
 let detailActiveTab = 'overview'
+// Pending innerHTML wipe from the last close, cancelled if the panel is reopened
+// before the slide-out transition finishes.
+let detailClearTimer: any = null
 
 function ensureDetailPanel(): HTMLElement {
+  if (detailClearTimer) {
+    clearTimeout(detailClearTimer)
+    detailClearTimer = null
+  }
   if (detailPanel) return detailPanel
   detailPanel = document.createElement('div')
   detailPanel.id = 'ea-detail'
@@ -1436,7 +1442,11 @@ function ensureDetailPanel(): HTMLElement {
 function closeDetailPanel() {
   if (detailPanel) {
     detailPanel.classList.remove('open')
-    setTimeout(() => { if (detailPanel) detailPanel.innerHTML = '' }, 300)
+    if (detailClearTimer) clearTimeout(detailClearTimer)
+    detailClearTimer = setTimeout(() => {
+      detailClearTimer = null
+      if (detailPanel) detailPanel.innerHTML = ''
+    }, 300)
   }
 }
 
@@ -2173,16 +2183,15 @@ function injectUI() {
     }
     if (gridGroup) {
       gridGroup.visible = (activeCategory === 'electricity')
+      if (gridGroup.visible && subLayers.gridLines450) buildGridLines()
       // Toggle node and line visibility inside the gridGroup
       gridGroup.children.forEach((child: any) => {
         if (child.userData?.type === 'nuclear') child.visible = subLayers.gridNuclear
         else if (child.userData?.type === 'hydro') child.visible = subLayers.gridHydro
         else if (child.userData?.type === 'coal' || child.userData?.type === 'gas') child.visible = subLayers.gridFossil
         else if (child.userData?.type === 'wind' || child.userData?.type === 'solar' || child.userData?.type === 'biomass') child.visible = subLayers.gridRenewable
-        else if (child.userData?.clickType === 'gridLine') {
-          child.visible = subLayers.gridLines450
-        }
       })
+      if (gridLineGroup) gridLineGroup.visible = subLayers.gridLines450
     }
     if (priceMarkerGroup) priceMarkerGroup.visible = (activeCategory === 'overview' && subLayers.priceMarkers)
     // Province names always show in overview mode; optional in other modes
@@ -2250,7 +2259,10 @@ function toggleLayer(key: keyof typeof layerState, btn: HTMLElement) {
   if (key === 'oilPipelines' && oilPipelineGroup) oilPipelineGroup.visible = layerState.oilPipelines
   if (key === 'gasPipelines' && gasPipelineGroup) gasPipelineGroup.visible = layerState.gasPipelines
   if (key === 'cancelledPipelines' && cancelledPipelineGroup) cancelledPipelineGroup.visible = layerState.cancelledPipelines
-  if (key === 'grid' && gridGroup) gridGroup.visible = layerState.grid
+  if (key === 'grid' && gridGroup) {
+    if (layerState.grid) buildGridLines()
+    gridGroup.visible = layerState.grid
+  }
   if (key === 'prices' && priceMarkerGroup) priceMarkerGroup.visible = layerState.prices
   if (key === 'labels' && labelGroup) labelGroup.visible = layerState.labels
   if (key === 'exports' && exportGroup) exportGroup.visible = layerState.exports

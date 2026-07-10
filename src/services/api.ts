@@ -245,10 +245,6 @@ export function getCancelledPipelines(): PipelineProject[] {
         [46.10, -67.80],   // Fredericton NB area
         [45.27, -66.06],   // Saint John NB
       ],
-      youtube_videos: [
-        { title: 'Energy East Pipeline Explained', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
-        { title: 'Why Energy East was Cancelled', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-      ]
     },
     {
       name: 'Northern Gateway',
@@ -268,9 +264,6 @@ export function getCancelledPipelines(): PipelineProject[] {
         [54.05, -122.75],  // Prince George BC
         [54.00, -128.65],  // Kitimat BC
       ],
-      youtube_videos: [
-        { title: 'The Story of Northern Gateway', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-      ]
     },
     {
       name: 'Keystone XL',
@@ -292,10 +285,6 @@ export function getCancelledPipelines(): PipelineProject[] {
         [45.00, -105.00],  // South Dakota
         [40.33, -96.77],   // Steele City NE
       ],
-      youtube_videos: [
-        { title: 'Keystone XL Timeline', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
-        { title: 'Political Impact of KXL Cancellation', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-      ]
     },
   ]
 }
@@ -466,9 +455,6 @@ export function getOperationalPipelines(): OperationalPipeline[] {
       source_url: 'https://www.transmountain.com',
       color: 0x2e5984, // Slate blue
       route: [[53.54, -113.49], [52.87, -115.76], [51.38, -116.85], [51.05, -118.18], [50.37, -119.34], [49.88, -119.49], [49.27, -121.76], [49.28, -122.80], [49.29, -123.00], [48.90, -123.37]],
-      youtube_videos: [
-        { title: 'The Original Trans Mountain', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-      ]
     },
     {
       name: 'TMX',
@@ -479,9 +465,6 @@ export function getOperationalPipelines(): OperationalPipeline[] {
       color: 0xb22222, // Firebrick heavy red
       // Shifted by exactly +1.0 degree strictly North in Latitude so the twin pipe draws visibly parallel in 3D without physically clipping
       route: [[54.54, -113.49], [53.87, -115.76], [52.38, -116.85], [52.05, -118.18], [51.37, -119.34], [50.88, -119.49], [50.27, -121.76], [50.28, -122.80], [50.29, -123.00], [49.90, -123.37]],
-      youtube_videos: [
-        { title: 'TMX Megaproject Completion', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-      ]
     },
     {
       name: 'Enbridge Mainline',
@@ -663,14 +646,10 @@ export interface GridNode {
   capacity_mw: number
 }
 
-export interface TransmissionLine {
-  from: string
-  to: string
-  voltage_kv: number
-  capacity_mw: number
-}
+// Transmission lines are no longer hand-authored here — src/data/canada_grid_hv.json
+// carries the real OSM-derived geometry. See scripts/build_grid_hv.js.
 
-export function getElectricalGridData(): { nodes: GridNode[], lines: TransmissionLine[] } {
+export function getElectricalGridData(): { nodes: GridNode[] } {
   return {
     nodes: [
       // === HYDRO ===
@@ -723,18 +702,6 @@ export function getElectricalGridData(): { nodes: GridNode[], lines: Transmissio
       { name: 'Henvey Inlet Wind', province: 'ON', lat: 45.89, lng: -80.60, type: 'wind', capacity_mw: 300 },
       { name: 'Seigneurie de Beaupré', province: 'QC', lat: 47.38, lng: -70.85, type: 'wind', capacity_mw: 365 },
       { name: 'Rivière-du-Moulin', province: 'QC', lat: 48.40, lng: -70.70, type: 'wind', capacity_mw: 350 },
-    ],
-    lines: [
-      { from: 'Robert-Bourassa', to: 'Montreal (HQ)', voltage_kv: 735, capacity_mw: 5000 },
-      { from: 'Churchill Falls', to: 'Quebec Interconnect', voltage_kv: 735, capacity_mw: 5000 },
-      { from: 'Bruce Nuclear', to: 'Toronto (IESO)', voltage_kv: 500, capacity_mw: 4000 },
-      { from: 'Niagara Falls (Beck)', to: 'Toronto (IESO)', voltage_kv: 500, capacity_mw: 2000 },
-      { from: 'WAC Bennett Dam', to: 'Vancouver (BC Hydro)', voltage_kv: 500, capacity_mw: 3000 },
-      { from: 'Quebec Interconnect', to: 'Ontario Interconnect', voltage_kv: 450, capacity_mw: 2600 },
-      { from: 'Ontario Interconnect', to: 'Manitoba Interconnect', voltage_kv: 500, capacity_mw: 1500 },
-      { from: 'Manitoba Interconnect', to: 'Saskatchewan Interconnect', voltage_kv: 230, capacity_mw: 150 },
-      { from: 'Saskatchewan Interconnect', to: 'Alberta Interconnect', voltage_kv: 230, capacity_mw: 150 },
-      { from: 'Alberta Interconnect', to: 'BC Interconnect', voltage_kv: 500, capacity_mw: 1200 },
     ],
   }
 }
@@ -793,9 +760,6 @@ export function getExportTerminals(): ExportTerminal[] {
       operator: 'Shell / Petronas / PetroChina / Mitsubishi / KOGAS',
       summary: 'Canada\'s first large-scale LNG export facility, located in Kitimat, BC. Phase 1 will process natural gas from the Montney basin delivered via the Coastal GasLink pipeline.',
       source_url: 'https://www.lngcanada.ca',
-      youtube_videos: [
-        { title: 'LNG Canada Project Overview', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-      ]
     },
     {
       name: 'Woodfibre LNG',

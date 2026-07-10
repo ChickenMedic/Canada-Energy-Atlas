@@ -1,1 +1,7 @@
-﻿node_modules/
+node_modules/
+
+# Raw Overpass extract — 36 MB, regenerate with scripts/fetch_canada_osm*.js
+osm_canada.json
+
+# Saved API error responses from failed fetch runs
+osm_error.html
