@@ -1,5 +1,8 @@
 node_modules/
 
+# Build output — regenerate with `npm run build`
+dist/
+
 # Raw Overpass extract — 36 MB, regenerate with scripts/fetch_canada_osm*.js
 osm_canada.json
 
